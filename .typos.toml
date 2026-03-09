@@ -1,8 +1,13 @@
 [default.extend-words]
 # kernel-специфичные "слова" которые не опечатки
-"wdk"    = "wdk"
-"kmdf"   = "kmdf"
-"umdf"   = "umdf"
-"irp"    = "irp"
-"ioctl"  = "ioctl"
-"ntddk"  = "ntddk"
+"wdk"   = "wdk"
+"kmdf"  = "kmdf"
+"umdf"  = "umdf"
+"irp"   = "irp"
+"ntddk" = "ntddk"
+
+[default.extend-identifiers]
+# PnP = Plug and Play — Windows kernel термин, не опечатка
+"PnP" = "PnP"
+"pnp" = "pnp"
+"Pnp" = "Pnp"
