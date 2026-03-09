@@ -1,69 +1,74 @@
-// Copyright (c) 2025 arelove
 // SPDX-License-Identifier: MIT OR Apache-2.0
+// Copyright (c) 2025 arelove
 
 //! # hid-filter
 //!
-//! A minimal KMDF HID keyboard filter driver written using `wdk-safe`.
+//! A minimal KMDF HID keyboard upper-filter driver built with `wdk-safe`.
 //!
 //! ## What this driver does
 //!
-//! This driver attaches itself as a **filter** above the HID keyboard device
-//! stack. Every keystroke passes through [`dispatch_read`] before reaching
-//! Windows. We log each key event via `DbgPrint` (visible in WinDbg) and
-//! pass the IRP unchanged down the stack.
+//! Attaches above the HID keyboard device stack. Every keystroke passes
+//! through [`dispatch_read`] — we log it via `DbgPrint` (visible in WinDbg)
+//! and forward the IRP unchanged so Windows still receives the input.
 //!
-//! ## Architecture
+//! ## Device stack
 //!
 //! ```text
-//!  ┌─────────────────────────┐
-//!  │   Win32 application     │  user mode
-//!  └────────────┬────────────┘
-//!               │ ReadFile / DeviceIoControl
-//!  ══════════════════════════════ kernel boundary
+//!  ┌──────────────────────────┐
+//!  │   Win32 application      │  user mode
+//!  └────────────┬─────────────┘
+//!               │  ReadFile
+//!  ═════════════════════════════ kernel boundary
 //!               │
-//!  ┌────────────▼────────────┐
-//!  │  hid-filter.sys  ◄──── THIS DRIVER (upper filter)
-//!  │  logs keystrokes via    │
-//!  │  DbgPrint to WinDbg     │
-//!  └────────────┬────────────┘
-//!               │ passes IRP down unchanged
-//!  ┌────────────▼────────────┐
-//!  │  kbdhid.sys             │  HID keyboard port driver (Microsoft)
-//!  └────────────┬────────────┘
+//!  ┌────────────▼─────────────┐
+//!  │  hid-filter.sys          │  ← THIS DRIVER  (upper filter)
+//!  │  logs every keystroke    │
+//!  │  via DbgPrint to WinDbg  │
+//!  └────────────┬─────────────┘
+//!               │  IoCallDriver  (IRP forwarded unchanged)
+//!  ┌────────────▼─────────────┐
+//!  │  kbdhid.sys              │  HID keyboard port driver (Microsoft)
+//!  └────────────┬─────────────┘
 //!               │
-//!  ┌────────────▼────────────┐
-//!  │  HID USB keyboard       │  hardware
-//!  └─────────────────────────┘
+//!  ┌────────────▼─────────────┐
+//!  │  USB keyboard hardware   │
+//!  └──────────────────────────┘
 //! ```
 //!
-//! ## Testing
+//! ## How to test
 //!
-//! 1. Enable test signing in the target VM:
+//! 1. In Hyper-V test VM, enable test signing once:
 //!    ```cmd
 //!    bcdedit /set testsigning on
+//!    shutdown /r /t 0
 //!    ```
-//! 2. Load the driver:
+//! 2. Build the driver (inside eWDK developer prompt):
+//!    ```powershell
+//!    cargo make
+//!    ```
+//! 3. Copy `target\debug\package\` to the VM.
+//! 4. Load the driver in the VM:
 //!    ```cmd
 //!    sc create hid-filter type= kernel binPath= C:\drivers\hid_filter.sys
 //!    sc start hid-filter
 //!    ```
-//! 3. Open WinDbg on the host and attach to the kernel of the VM.
-//! 4. Press any key in the VM — you will see `[hid-filter] key event` in
-//!    WinDbg output.
+//! 5. On the host, open WinDbg → attach to kernel of the VM.
+//! 6. Press any key in the VM — you will see lines like:
+//!    ```
+//!    [hid-filter] IRP_MJ_READ -- forwarding down
+//!    ```
 
 #![no_std]
 #![deny(unsafe_op_in_unsafe_fn)]
 #![warn(missing_docs)]
 
-// ── Kernel-mode boilerplate ──────────────────────────────────────────────────
+// ── Kernel-mode boilerplate ───────────────────────────────────────────────────
 
-// Panic handler: on panic in kernel mode, trigger a bug check (BSOD) with a
-// descriptive stop code rather than silently corrupting state.
+/// On panic in kernel mode, trigger a bug check rather than corrupt state.
 #[cfg(not(test))]
 extern crate wdk_panic;
 
-// Pool allocator: allows using heap-allocated types (Vec, Box, etc.) in kernel
-// mode via the WDK non-paged pool.
+/// WDK pool allocator — enables `alloc` types (Vec, Box, …) in kernel mode.
 #[cfg(not(test))]
 use wdk_alloc::WdkAllocator;
 
@@ -71,11 +76,18 @@ use wdk_alloc::WdkAllocator;
 #[global_allocator]
 static GLOBAL_ALLOCATOR: WdkAllocator = WdkAllocator;
 
-// ── Imports ──────────────────────────────────────────────────────────────────
+// ── Imports ───────────────────────────────────────────────────────────────────
 
 use wdk_safe::{Device, IoRequest, KmdfDriver, NtStatus};
 use wdk_sys::{
-    ntddk::DbgPrint,
+    ntddk::{
+        DbgPrint,
+        IoCallDriver,
+        IoDeleteDevice,
+        IoDetachDevice,
+        IoGetCurrentIrpStackLocation,
+        IoSkipCurrentIrpStackLocation,
+    },
     DRIVER_OBJECT,
     NTSTATUS,
     PCUNICODE_STRING,
@@ -83,147 +95,131 @@ use wdk_sys::{
     PIRP,
 };
 
-// ── Driver state ─────────────────────────────────────────────────────────────
+// ── Global driver state ───────────────────────────────────────────────────────
 
-/// The lower device object in the filter stack.
+/// Pointer to the device object one level below us in the filter stack.
 ///
-/// When our filter attaches above `kbdhid.sys`, the I/O manager gives us a
-/// pointer to the device below us. We store it so we can forward IRPs down.
-///
-/// # Safety
-///
-/// Mutable statics are inherently unsafe. Access is safe here because:
-/// - It is written once in `driver_entry` before any dispatch routine runs.
-/// - It is read-only after that point.
-/// - Windows guarantees single-threaded `DriverEntry` execution.
+/// Set once in `DriverEntry`, read-only thereafter. Safe because:
+/// - Written before any dispatch routine can run.
+/// - `DriverEntry` is called single-threaded by the kernel.
 static mut LOWER_DEVICE: PDEVICE_OBJECT = core::ptr::null_mut();
 
-// ── KmdfDriver implementation ────────────────────────────────────────────────
+// ── KmdfDriver implementation ─────────────────────────────────────────────────
 
-/// The HID keyboard filter driver.
+/// The HID keyboard upper-filter driver.
 struct HidFilterDriver;
 
 impl KmdfDriver for HidFilterDriver {
-    /// Called when a user-mode application opens a handle to the keyboard.
-    fn on_create(_device: &Device, request: IoRequest) -> NtStatus {
-        // SAFETY: DbgPrint is safe to call at PASSIVE_LEVEL.
-        unsafe {
-            DbgPrint(b"[hid-filter] IRP_MJ_CREATE\n\0".as_ptr().cast());
-        }
+    /// `IRP_MJ_CREATE` — a user-mode process opened the keyboard device.
+    fn on_create(_device: &Device, request: IoRequest<'_>) -> NtStatus {
+        // SAFETY: DbgPrint is safe at IRQL PASSIVE_LEVEL.
+        unsafe { DbgPrint(b"[hid-filter] IRP_MJ_CREATE\n\0".as_ptr().cast()); }
         request.complete(NtStatus::SUCCESS)
     }
 
-    /// Called when the last handle to the keyboard is closed.
-    fn on_close(_device: &Device, request: IoRequest) -> NtStatus {
-        // SAFETY: DbgPrint is safe to call at PASSIVE_LEVEL.
-        unsafe {
-            DbgPrint(b"[hid-filter] IRP_MJ_CLOSE\n\0".as_ptr().cast());
-        }
+    /// `IRP_MJ_CLOSE` — the last handle to the keyboard device was closed.
+    fn on_close(_device: &Device, request: IoRequest<'_>) -> NtStatus {
+        // SAFETY: DbgPrint is safe at IRQL PASSIVE_LEVEL.
+        unsafe { DbgPrint(b"[hid-filter] IRP_MJ_CLOSE\n\0".as_ptr().cast()); }
         request.complete(NtStatus::SUCCESS)
     }
 
-    /// Called for every read from the keyboard — this is where keystrokes
-    /// arrive. We log the event and pass the IRP down the device stack
-    /// unchanged so Windows still receives the keystrokes normally.
-    fn on_read(_device: &Device, request: IoRequest) -> NtStatus {
-        // SAFETY: DbgPrint is safe to call at DISPATCH_LEVEL or below.
+    /// `IRP_MJ_READ` — a keystroke is arriving from the hardware.
+    ///
+    /// We log the event and forward the IRP down the stack unchanged.
+    /// The lower driver (`kbdhid.sys`) completes it when data is ready.
+    fn on_read(_device: &Device, request: IoRequest<'_>) -> NtStatus {
+        // SAFETY: DbgPrint is safe at IRQL DISPATCH_LEVEL or below.
         unsafe {
-            DbgPrint(b"[hid-filter] key event (IRP_MJ_READ) -- passing down\n\0"
-                .as_ptr()
-                .cast());
+            DbgPrint(
+                b"[hid-filter] IRP_MJ_READ -- forwarding down\n\0"
+                    .as_ptr()
+                    .cast(),
+            );
         }
 
-        // Forward the IRP to the device below us in the stack.
-        //
-        // SAFETY: LOWER_DEVICE is non-null after DriverEntry and read-only
-        // from this point. IoCallDriver consumes the IRP.
+        // SAFETY: LOWER_DEVICE is non-null after DriverEntry and never
+        // mutated again. We hand IRP ownership to the lower driver.
         unsafe { forward_irp_down(request) }
     }
 }
 
-// ── IRP forwarding ───────────────────────────────────────────────────────────
+// ── IRP forwarding ────────────────────────────────────────────────────────────
 
-/// Copies the current `IO_STACK_LOCATION` to the next and forwards the IRP
-/// to the lower device object.
+/// Skips our stack location and forwards the IRP to the lower device.
+///
+/// `IoSkipCurrentIrpStackLocation` + `IoCallDriver` is the canonical
+/// pattern for a pass-through filter that does not need a completion
+/// routine.
 ///
 /// # Safety
 ///
 /// - `LOWER_DEVICE` must be non-null and valid.
-/// - The `IoRequest` must not be completed before this call.
-unsafe fn forward_irp_down(request: IoRequest) -> NtStatus {
-    // IoSkipCurrentIrpStackLocation + IoCallDriver is the canonical way to
-    // forward an IRP to the next driver in the stack without modification.
-    //
-    // SAFETY: caller guarantees LOWER_DEVICE is valid. We consume the request
-    // (do not complete it ourselves) and hand ownership to the lower driver.
-    let (irp_ptr, lower) = unsafe {
-        let irp = request.into_raw_irp();
-        wdk_sys::ntddk::IoSkipCurrentIrpStackLocation(irp);
+/// - `request` must not have been completed already.
+unsafe fn forward_irp_down(request: IoRequest<'_>) -> NtStatus {
+    // SAFETY: into_raw_irp() consumes the request — we must not touch it
+    // after this point. Ownership transfers to IoCallDriver.
+    let (irp_raw, lower) = unsafe {
+        let irp = request.into_raw_irp() as PIRP;
+        IoSkipCurrentIrpStackLocation(irp);
         (irp, LOWER_DEVICE)
     };
 
-    let status = unsafe { wdk_sys::ntddk::IoCallDriver(lower, irp_ptr) };
-    NtStatus::from(status)
+    // SAFETY: lower is valid (set in DriverEntry, never mutated again).
+    // irp_raw is valid (just obtained from into_raw_irp).
+    let status = unsafe { IoCallDriver(lower, irp_raw) };
+    NtStatus::from_raw(status)
 }
 
-// ── DriverEntry ──────────────────────────────────────────────────────────────
+// ── DriverEntry ───────────────────────────────────────────────────────────────
 
-/// The driver entry point called by Windows when the driver is loaded.
-///
-/// We create our filter device object, attach it above the HID keyboard
-/// device, and register our dispatch routines.
+/// Windows calls this once when the driver is loaded.
 ///
 /// # Safety
 ///
-/// `DriverEntry` is called once by the kernel at driver load time.
-/// `driver` and `registry_path` are guaranteed non-null by the I/O manager.
+/// `driver` and `registry_path` are valid non-null pointers supplied by
+/// the I/O manager. This function must be `unsafe extern "system"`.
 #[unsafe(export_name = "DriverEntry")]
 pub unsafe extern "system" fn driver_entry(
     driver: *mut DRIVER_OBJECT,
     registry_path: PCUNICODE_STRING,
 ) -> NTSTATUS {
-    // SAFETY: driver and registry_path are valid per the kernel contract for
-    // DriverEntry. We call into WDF to finish initialisation.
+    // SAFETY: pointers are valid per the DriverEntry kernel contract.
     unsafe { driver_entry_inner(driver, registry_path).into_raw() }
 }
 
-/// Safe inner implementation of `DriverEntry`.
+/// Safe inner body of `DriverEntry`.
 ///
-/// Separated from the `unsafe extern "system"` entry point so that the
-/// majority of the initialisation logic can use normal Rust error handling.
+/// Separated so the bulk of initialisation logic lives outside the
+/// `unsafe extern "system"` boundary.
 fn driver_entry_inner(
     driver: *mut DRIVER_OBJECT,
     _registry_path: PCUNICODE_STRING,
 ) -> NtStatus {
-    // SAFETY: DbgPrint is safe at PASSIVE_LEVEL (DriverEntry runs at
-    // PASSIVE_LEVEL by definition).
+    // SAFETY: DriverEntry always runs at IRQL PASSIVE_LEVEL.
     unsafe {
-        DbgPrint(b"[hid-filter] DriverEntry called\n\0".as_ptr().cast());
+        DbgPrint(b"[hid-filter] DriverEntry -- loading\n\0".as_ptr().cast());
     }
 
-    // Register dispatch routines. The kernel calls these function pointers
-    // when an IRP of the corresponding major function code arrives.
+    // Register our dispatch routines in the MajorFunction table.
     //
-    // SAFETY: `driver` is a valid DRIVER_OBJECT pointer for the lifetime of
-    // this driver. Writing the MajorFunction table is the standard way to
-    // register dispatch routines and is documented in the WDK.
+    // SAFETY: driver is a valid DRIVER_OBJECT for the lifetime of the driver.
+    // Writing MajorFunction entries is the documented way to register
+    // dispatch routines (WDK: Writing a DriverEntry Routine).
     unsafe {
         let obj = &mut *driver;
 
-        obj.MajorFunction[wdk_sys::IRP_MJ_CREATE as usize] =
-            Some(dispatch_create);
-        obj.MajorFunction[wdk_sys::IRP_MJ_CLOSE as usize] =
-            Some(dispatch_close);
-        obj.MajorFunction[wdk_sys::IRP_MJ_READ as usize] =
-            Some(dispatch_read);
+        obj.MajorFunction[wdk_sys::IRP_MJ_CREATE as usize] = Some(dispatch_create);
+        obj.MajorFunction[wdk_sys::IRP_MJ_CLOSE  as usize] = Some(dispatch_close);
+        obj.MajorFunction[wdk_sys::IRP_MJ_READ   as usize] = Some(dispatch_read);
 
         obj.DriverUnload = Some(driver_unload);
     }
 
-    // SAFETY: DbgPrint — same reasoning as above.
+    // SAFETY: PASSIVE_LEVEL — same as above.
     unsafe {
         DbgPrint(
-            b"[hid-filter] DriverEntry complete -- dispatch table registered\n\0"
+            b"[hid-filter] DriverEntry -- dispatch table registered\n\0"
                 .as_ptr()
                 .cast(),
         );
@@ -232,20 +228,24 @@ fn driver_entry_inner(
     NtStatus::SUCCESS
 }
 
-// ── Dispatch thunks ──────────────────────────────────────────────────────────
+// ── Dispatch thunks ───────────────────────────────────────────────────────────
 //
-// These `extern "system"` functions are stored in the MajorFunction table.
-// Each one constructs the safe wdk-safe types and delegates to HidFilterDriver.
+// These `extern "system"` functions are stored in DRIVER_OBJECT.MajorFunction.
+// Each one converts the raw kernel pointers into safe wdk-safe types and
+// delegates to HidFilterDriver.
 
 unsafe extern "system" fn dispatch_create(
     device: PDEVICE_OBJECT,
     irp: PIRP,
 ) -> NTSTATUS {
-    // SAFETY: device and irp are valid kernel pointers supplied by the I/O
-    // manager for the duration of this dispatch call.
-    let dev = unsafe { Device::from_raw(device) };
+    // SAFETY: device and irp are valid for the duration of this dispatch call,
+    // guaranteed by the I/O manager.
+    let dev = unsafe { Device::from_raw(device.cast()) };
     let req = unsafe {
-        IoRequest::from_raw(irp, wdk_sys::ntddk::IoGetCurrentIrpStackLocation(irp))
+        IoRequest::from_raw(
+            irp.cast(),
+            IoGetCurrentIrpStackLocation(irp).cast(),
+        )
     };
     HidFilterDriver::on_create(&dev, req).into_raw()
 }
@@ -255,9 +255,12 @@ unsafe extern "system" fn dispatch_close(
     irp: PIRP,
 ) -> NTSTATUS {
     // SAFETY: same as dispatch_create.
-    let dev = unsafe { Device::from_raw(device) };
+    let dev = unsafe { Device::from_raw(device.cast()) };
     let req = unsafe {
-        IoRequest::from_raw(irp, wdk_sys::ntddk::IoGetCurrentIrpStackLocation(irp))
+        IoRequest::from_raw(
+            irp.cast(),
+            IoGetCurrentIrpStackLocation(irp).cast(),
+        )
     };
     HidFilterDriver::on_close(&dev, req).into_raw()
 }
@@ -267,33 +270,34 @@ unsafe extern "system" fn dispatch_read(
     irp: PIRP,
 ) -> NTSTATUS {
     // SAFETY: same as dispatch_create.
-    let dev = unsafe { Device::from_raw(device) };
+    let dev = unsafe { Device::from_raw(device.cast()) };
     let req = unsafe {
-        IoRequest::from_raw(irp, wdk_sys::ntddk::IoGetCurrentIrpStackLocation(irp))
+        IoRequest::from_raw(
+            irp.cast(),
+            IoGetCurrentIrpStackLocation(irp).cast(),
+        )
     };
     HidFilterDriver::on_read(&dev, req).into_raw()
 }
 
-// ── DriverUnload ─────────────────────────────────────────────────────────────
+// ── DriverUnload ──────────────────────────────────────────────────────────────
 
 /// Called by Windows when the driver is being unloaded.
 ///
-/// Detach from the device stack and delete our filter device object.
+/// Detaches our filter device from the stack and deletes it.
 unsafe extern "system" fn driver_unload(driver: *mut DRIVER_OBJECT) {
-    // SAFETY: DbgPrint is safe at PASSIVE_LEVEL. DriverUnload is always called
-    // at PASSIVE_LEVEL.
+    // SAFETY: DriverUnload always runs at IRQL PASSIVE_LEVEL.
     unsafe {
-        DbgPrint(b"[hid-filter] DriverUnload called\n\0".as_ptr().cast());
+        DbgPrint(b"[hid-filter] DriverUnload -- unloading\n\0".as_ptr().cast());
 
-        // Detach our filter device from the stack and delete it.
         if !LOWER_DEVICE.is_null() {
             let device_obj = (*driver).DeviceObject;
             if !device_obj.is_null() {
-                wdk_sys::ntddk::IoDetachDevice(LOWER_DEVICE);
-                wdk_sys::ntddk::IoDeleteDevice(device_obj);
+                IoDetachDevice(LOWER_DEVICE);
+                IoDeleteDevice(device_obj);
             }
         }
 
-        DbgPrint(b"[hid-filter] unloaded successfully\n\0".as_ptr().cast());
+        DbgPrint(b"[hid-filter] DriverUnload -- done\n\0".as_ptr().cast());
     }
 }

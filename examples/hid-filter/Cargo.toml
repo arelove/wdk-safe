@@ -1,33 +1,41 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
 # Copyright (c) 2025 arelove
 
-# SPDX-License-Identifier: MIT OR Apache-2.0
-# NOTE: This example has its own workspace because WDK only supports one
-# driver configuration per Cargo workspace. This mirrors the layout used in
-# microsoft/Windows-rust-driver-samples.
+[package]
+name        = "hid-filter"
+version     = "0.1.0"
+description = "HID keyboard upper-filter driver — demonstrates wdk-safe abstractions"
+edition.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
 
-[workspace]
-resolver = "2"
-members  = ["hid-filter"]
+# A kernel-mode driver is a cdylib — the linker produces a .sys file.
+[lib]
+crate-type = ["cdylib"]
 
-[workspace.package]
-authors      = ["arelove"]
-edition      = "2021"
-license      = "MIT OR Apache-2.0"
-repository   = "https://github.com/arelove/wdk-safe"
-rust-version = "1.78.0"
+[dependencies]
+wdk-safe  = { workspace = true }
+wdk       = { workspace = true }
+wdk-alloc = { workspace = true }
+wdk-panic = { workspace = true }
+wdk-sys   = { workspace = true }
 
-[workspace.dependencies]
-wdk       = "0.4.1"
-wdk-alloc = "0.4.1"
-wdk-build = "0.5.1"
-wdk-panic = "0.4.1"
-wdk-sys   = "0.5.1"
-wdk-safe  = { path = "../../crates/wdk-safe" }
+[build-dependencies]
+wdk-build = { workspace = true }
 
-[workspace.lints.rust]
-missing_docs           = "warn"
-unsafe_op_in_unsafe_fn = "warn"
+# Kernel mode: no stack unwinding in ring 0.
+[profile.dev]
+panic = "abort"
 
-[workspace.lints.clippy]
-all      = { level = "warn", priority = -1 }
-pedantic = { level = "warn", priority = -1 }
+[profile.release]
+panic = "abort"
+
+# Tells cargo-make this is a KMDF 1.33 driver.
+[package.metadata.wdk.driver-model]
+driver-type               = "KMDF"
+kmdf-version-major        = 1
+target-kmdf-version-minor = 33
+
+[lints]
+workspace = true
