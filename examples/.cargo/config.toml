@@ -1,0 +1,26 @@
+# .cargo/config.toml — examples workspace (hid-filter)
+#
+# Kernel-mode drivers must rebuild `core` from source so that panic=abort
+# propagates through the *entire* dependency graph, including the pre-compiled
+# standard library.  This requires the nightly `-Zbuild-std` feature and the
+# `rust-src` component (pinned via rust-toolchain.toml at the workspace root).
+
+[build]
+# -Cpanic=abort : force abort strategy for every crate in the build graph,
+#   overriding the pre-compiled core's unwind default.
+# +crt-static   : statically link the MSVC CRT (required for kernel drivers).
+rustflags = [
+    "-C", "panic=abort",
+    "-C", "target-feature=+crt-static",
+]
+
+# -Zbuild-std: rebuild core from source.
+# - List only "core" — cargo will pull compiler_builtins implicitly with the
+#   minimal set of features (no libm, no fma/fmaf that require CRT in kernel).
+# - build-std-features is omitted: the default ("panic-unwind", "backtrace")
+#   is overridden to empty so that panic_unwind is not compiled in.
+#   The panic=abort rustflag below already handles abort behaviour for us.
+# Requires: nightly toolchain + `rust-src` component (see rust-toolchain.toml).
+[unstable]
+build-std = ["core"]
+build-std-features = []

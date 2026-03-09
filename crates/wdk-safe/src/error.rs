@@ -89,7 +89,8 @@ impl NtStatus {
         self.0 >= 0
     }
 
-    /// Returns `true` if this is an informational status (severity bits = `01`).
+    /// Returns `true` if this is an informational status (severity bits =
+    /// `01`).
     #[must_use]
     #[inline]
     #[allow(clippy::cast_sign_loss)]

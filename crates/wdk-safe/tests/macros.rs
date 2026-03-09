@@ -22,7 +22,8 @@ pub struct Rsp {
     pub value: u32,
 }
 
-// ── Minimal syntax (default method + access) ──────────────────────────────────
+// ── Minimal syntax (default method + access)
+// ──────────────────────────────────
 
 define_ioctl!(IOCTL_ECHO, 0x8000u16, 0x800u16, Req => Rsp);
 
@@ -48,7 +49,8 @@ fn default_access_is_any() {
     assert_eq!(IOCTL_ECHO.access(), RequiredAccess::Any);
 }
 
-// ── Explicit method = InDirect, access = Read ─────────────────────────────────
+// ── Explicit method = InDirect, access = Read
+// ─────────────────────────────────
 
 define_ioctl!(
     IOCTL_READ_DATA,
@@ -80,7 +82,8 @@ fn ioctl_read_data_type_aliases_exist() {
     let _: IoctlReadDataOutput = Rsp { value: 0 };
 }
 
-// ── Explicit method = OutDirect, access = Write ───────────────────────────────
+// ── Explicit method = OutDirect, access = Write
+// ───────────────────────────────
 
 define_ioctl!(
     IOCTL_WRITE_DATA,
@@ -101,7 +104,8 @@ fn ioctl_write_data_access_is_write() {
     assert_eq!(IOCTL_WRITE_DATA.access(), RequiredAccess::Write);
 }
 
-// ── Explicit method = Neither, access = ReadWrite ─────────────────────────────
+// ── Explicit method = Neither, access = ReadWrite
+// ─────────────────────────────
 
 define_ioctl!(
     IOCTL_NEITHER_RW,
@@ -122,7 +126,8 @@ fn ioctl_neither_rw_access_is_read_write() {
     assert_eq!(IOCTL_NEITHER_RW.access(), RequiredAccess::ReadWrite);
 }
 
-// ── PascalCase name derivation ────────────────────────────────────────────────
+// ── PascalCase name derivation
+// ────────────────────────────────────────────────
 
 define_ioctl!(IOCTL_MY_MULTI_WORD, 0x8000u16, 0x810u16, Req => Rsp);
 
@@ -133,7 +138,8 @@ fn multi_word_pascal_case_aliases() {
     let _: IoctlMyMultiWordOutput = Rsp { value: 0 };
 }
 
-// ── Constants are distinct ─────────────────────────────────────────────────────
+// ── Constants are distinct
+// ─────────────────────────────────────────────────────
 
 #[test]
 fn different_function_codes_produce_different_raw_values() {

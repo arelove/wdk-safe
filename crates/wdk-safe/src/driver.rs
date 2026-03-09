@@ -20,21 +20,18 @@ use crate::{irp::IrpCompleter, Device, IoRequest, NtStatus};
 ///
 /// `C` is the [`IrpCompleter`] used in dispatch callbacks. In production this
 /// is a zero-sized type from your driver crate that calls
-/// `IoCompleteRequest`; in tests use [`NoopCompleter`](`crate::irp::NoopCompleter`).
+/// `IoCompleteRequest`; in tests use
+/// [`NoopCompleter`](`crate::irp::NoopCompleter`).
 ///
 /// # Example
 ///
 /// ```rust
-/// use wdk_safe::{Device, IoRequest, KmdfDriver, NtStatus};
-/// use wdk_safe::irp::NoopCompleter;
+/// use wdk_safe::{irp::NoopCompleter, Device, IoRequest, KmdfDriver, NtStatus};
 ///
 /// struct MyDriver;
 ///
 /// impl KmdfDriver<NoopCompleter> for MyDriver {
-///     fn on_device_control(
-///         _device: &Device,
-///         request: IoRequest<'_, NoopCompleter>,
-///     ) -> NtStatus {
+///     fn on_device_control(_device: &Device, request: IoRequest<'_, NoopCompleter>) -> NtStatus {
 ///         request.complete(NtStatus::SUCCESS)
 ///     }
 /// }

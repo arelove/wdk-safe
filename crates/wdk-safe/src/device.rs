@@ -32,8 +32,8 @@ impl Device {
     ///
     /// - `raw` must be non-null and point to a valid, fully-initialised
     ///   `DEVICE_OBJECT`.
-    /// - The pointer must remain valid for at least as long as this `Device`
-    ///   is in scope.
+    /// - The pointer must remain valid for at least as long as this `Device` is
+    ///   in scope.
     #[must_use]
     #[inline]
     pub unsafe fn from_raw(raw: *mut core::ffi::c_void) -> Self {

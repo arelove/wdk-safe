@@ -11,7 +11,8 @@ use syn::{
     parse_macro_input, Expr, Ident, LitStr, Token, Type,
 };
 
-// ── define_ioctl! ─────────────────────────────────────────────────────────────
+// ── define_ioctl!
+// ─────────────────────────────────────────────────────────────
 
 /// Parsed arguments for the `define_ioctl!` macro.
 ///

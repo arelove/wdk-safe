@@ -1,0 +1,56 @@
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = HIDClass
+ClassGuid   = {745a17a0-74d3-11d0-b6fe-00a0c90f57da}
+Provider    = %ManufacturerName%
+DriverVer   =
+CatalogFile = hid_filter.cat
+PnpLockdown = 1
+
+[DestinationDirs]
+DefaultDestDir      = 13
+HidFilter_CopyFiles = 13
+
+[Manufacturer]
+%ManufacturerName% = Standard, NT$ARCH$.10.0...16299
+
+[Standard.NT$ARCH$.10.0...16299]
+%DeviceDesc% = HidFilter_Install, HID\VID_045E&PID_0750
+
+; ── Install section ───────────────────────────────────────────────────────────
+; НЕТ суффикса .NT$ARCH$ здесь — infverif ищет именно "HidFilter_Install"
+; (то имя, что указано в [Standard.*] справа от =)
+
+[HidFilter_Install]
+CopyFiles = HidFilter_CopyFiles
+
+[HidFilter_CopyFiles]
+hid_filter.sys
+
+[HidFilter_Install.HW]
+AddReg = HidFilter_AddReg
+
+[HidFilter_AddReg]
+HKR,,"UpperFilters",0x00010008,"hid-filter"
+
+[HidFilter_Install.Services]
+AddService = hid-filter, 0x00000002, HidFilter_Service
+
+[HidFilter_Service]
+DisplayName    = %ServiceDesc%
+ServiceType    = 1
+StartType      = 3
+ErrorControl   = 1
+ServiceBinary  = %13%\hid_filter.sys
+
+[SourceDisksNames]
+1 = %DiskName%
+
+[SourceDisksFiles]
+hid_filter.sys = 1
+
+[Strings]
+ManufacturerName = "arelove"
+DeviceDesc       = "HID Keyboard Filter (wdk-safe demo)"
+ServiceDesc      = "HID Keyboard Upper Filter"
+DiskName         = "HID Filter Installation Disk"

@@ -7,8 +7,8 @@
 //!
 //! - [`Irp::complete`] consumes `self` — double-complete is a compile error.
 //! - `#[must_use]` warns if an IRP goes out of scope without being completed.
-//! - [`Irp::into_raw`] transfers ownership out of the type system, for use
-//!   with [`IoSkipCurrentIrpStackLocation`] + [`IoCallDriver`] forwarding.
+//! - [`Irp::into_raw`] transfers ownership out of the type system, for use with
+//!   [`IoSkipCurrentIrpStackLocation`] + [`IoCallDriver`] forwarding.
 //!
 //! # Kernel integration
 //!
@@ -21,8 +21,9 @@
 //! [`IoSkipCurrentIrpStackLocation`]: https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/nf-wdm-ioskipcurrentirpstacklocation
 //! [`IoCallDriver`]: https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/nf-wdm-iocalldriver
 
-use crate::NtStatus;
 use core::marker::PhantomData;
+
+use crate::NtStatus;
 
 // ── RawIrp ────────────────────────────────────────────────────────────────────
 
@@ -39,7 +40,8 @@ pub struct RawIrp(pub *mut core::ffi::c_void);
 // upholding those context rules; we merely forward the pointer.
 unsafe impl Send for RawIrp {}
 
-// ── IrpCompleter trait ────────────────────────────────────────────────────────
+// ── IrpCompleter trait
+// ────────────────────────────────────────────────────────
 
 /// Abstracts the `IoCompleteRequest` kernel function.
 ///

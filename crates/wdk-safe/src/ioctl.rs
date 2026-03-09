@@ -47,12 +47,8 @@ pub enum RequiredAccess {
 /// ```rust
 /// use wdk_safe::ioctl::{IoControlCode, RequiredAccess, TransferMethod};
 ///
-/// const IOCTL_ECHO: IoControlCode = IoControlCode::new(
-///     0x8000,
-///     0x800,
-///     TransferMethod::Buffered,
-///     RequiredAccess::Any,
-/// );
+/// const IOCTL_ECHO: IoControlCode =
+///     IoControlCode::new(0x8000, 0x800, TransferMethod::Buffered, RequiredAccess::Any);
 ///
 /// assert_eq!(IOCTL_ECHO.device_type(), 0x8000);
 /// assert_eq!(IOCTL_ECHO.function(), 0x800);
