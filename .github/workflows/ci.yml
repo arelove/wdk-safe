@@ -33,9 +33,9 @@ jobs:
           components: rustfmt
       - name: cargo fmt — workspace
         run: cargo fmt --all -- --check
-      - name: cargo fmt — examples/hid-filter (separate workspace)
+      - name: cargo fmt — examples workspace
         run: cargo fmt --all -- --check
-        working-directory: examples/hid-filter
+        working-directory: examples
 
   # ── 3. Clippy ──────────────────────────────────────────────────────────────
   clippy:

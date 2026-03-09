@@ -37,29 +37,23 @@
 //!
 //! ## How to test
 //!
-//! 1. In Hyper-V test VM, enable test signing once:
-//!    ```cmd
-//!    bcdedit /set testsigning on
-//!    shutdown /r /t 0
-//!    ```
-//! 2. Build the driver inside an eWDK developer prompt:
-//!    ```powershell
-//!    cargo make
-//!    ```
+//! 1. In Hyper-V test VM, enable test signing once: ```cmd bcdedit /set
+//!    testsigning on shutdown /r /t 0 ```
+//! 2. Build the driver inside an eWDK developer prompt: ```powershell cargo
+//!    make ```
 //! 3. Copy `target\debug\package\` to the VM.
-//! 4. Install the driver via Device Manager → Update Driver → Browse for
-//!    driver files → point to the `.inf`.
+//! 4. Install the driver via Device Manager → Update Driver → Browse for driver
+//!    files → point to the `.inf`.
 //! 5. On the host, attach WinDbg to the VM kernel.
-//! 6. Press any key in the VM — you will see:
-//!    ```text
-//!    [hid-filter] IRP_MJ_READ -- forwarding down
-//!    ```
+//! 6. Press any key in the VM — you will see: ```text [hid-filter] IRP_MJ_READ
+//!    -- forwarding down ```
 
 #![no_std]
 #![deny(unsafe_op_in_unsafe_fn)]
 #![warn(missing_docs)]
 
-// ── Kernel-mode boilerplate ───────────────────────────────────────────────────
+// ── Kernel-mode boilerplate
+// ───────────────────────────────────────────────────
 
 /// Bug-check on panic — the only safe behaviour in kernel mode.
 #[cfg(not(test))]
@@ -101,8 +95,6 @@ pub unsafe extern "C" fn __wdk_fmaf_stub(x: f32, y: f32, z: f32) -> f32 {
     x * y + z
 }
 
-
-
 use wdk_safe::{Device, IoRequest, KmdfDriver, NtStatus};
 use wdk_sys::{
     ntddk::{
@@ -116,16 +108,12 @@ use wdk_sys::{
         IofCallDriver,
         IofCompleteRequest,
     },
-    DRIVER_OBJECT,
-    FILE_DEVICE_KEYBOARD,
-    NTSTATUS,
-    PCUNICODE_STRING,
-    PDEVICE_OBJECT,
-    PIRP,
+    DRIVER_OBJECT, FILE_DEVICE_KEYBOARD, NTSTATUS, PCUNICODE_STRING, PDEVICE_OBJECT, PIRP,
     STATUS_SUCCESS,
 };
 
-// ── WDK FORCEINLINE stubs ─────────────────────────────────────────────────────
+// ── WDK FORCEINLINE stubs
+// ─────────────────────────────────────────────────────
 //
 // `IoGetCurrentIrpStackLocation` and `IoSkipCurrentIrpStackLocation` are
 // FORCEINLINE macros in the WDK C headers; bindgen cannot emit them, so
@@ -149,7 +137,14 @@ use wdk_sys::{
 #[inline]
 unsafe fn irp_current_stack(irp: *mut wdk_sys::IRP) -> *mut wdk_sys::IO_STACK_LOCATION {
     // SAFETY: caller guarantees `irp` is valid.
-    unsafe { (*irp).Tail.Overlay.__bindgen_anon_2.__bindgen_anon_1.CurrentStackLocation }
+    unsafe {
+        (*irp)
+            .Tail
+            .Overlay
+            .__bindgen_anon_2
+            .__bindgen_anon_1
+            .CurrentStackLocation
+    }
 }
 
 /// Advances the IRP stack so the next driver reuses our `IO_STACK_LOCATION`
@@ -165,12 +160,23 @@ unsafe fn irp_skip_current_stack(irp: *mut wdk_sys::IRP) {
     // SAFETY: caller guarantees validity and remaining stack depth.
     unsafe {
         (*irp).CurrentLocation += 1;
-        (*irp).Tail.Overlay.__bindgen_anon_2.__bindgen_anon_1.CurrentStackLocation =
-            (*irp).Tail.Overlay.__bindgen_anon_2.__bindgen_anon_1.CurrentStackLocation.add(1);
+        (*irp)
+            .Tail
+            .Overlay
+            .__bindgen_anon_2
+            .__bindgen_anon_1
+            .CurrentStackLocation = (*irp)
+            .Tail
+            .Overlay
+            .__bindgen_anon_2
+            .__bindgen_anon_1
+            .CurrentStackLocation
+            .add(1);
     }
 }
 
-// ── KernelCompleter ───────────────────────────────────────────────────────────
+// ── KernelCompleter
+// ───────────────────────────────────────────────────────────
 
 /// Concrete [`IrpCompleter`](wdk_safe::IrpCompleter) that calls
 /// `IofCompleteRequest` via `wdk-sys`.
@@ -195,7 +201,8 @@ impl wdk_safe::IrpCompleter for KernelCompleter {
     }
 }
 
-// ── Driver device extension ───────────────────────────────────────────────────
+// ── Driver device extension
+// ───────────────────────────────────────────────────
 
 /// Per-device state stored in `DeviceObject->DeviceExtension`.
 ///
@@ -208,7 +215,8 @@ struct FilterDeviceExtension {
     lower_device: PDEVICE_OBJECT,
 }
 
-// ── KmdfDriver implementation ─────────────────────────────────────────────────
+// ── KmdfDriver implementation
+// ─────────────────────────────────────────────────
 
 /// The HID keyboard upper-filter driver.
 struct HidFilterDriver;
@@ -300,7 +308,8 @@ impl KmdfDriver<KernelCompleter> for HidFilterDriver {
     }
 }
 
-// ── IRP forwarding ────────────────────────────────────────────────────────────
+// ── IRP forwarding
+// ────────────────────────────────────────────────────────────
 
 /// Skips our stack location and calls `IofCallDriver` on `lower`.
 ///
@@ -311,10 +320,7 @@ impl KmdfDriver<KernelCompleter> for HidFilterDriver {
 ///
 /// - `lower` must be non-null and valid.
 /// - `request` must not have been completed.
-unsafe fn forward_irp(
-    request: IoRequest<'_, KernelCompleter>,
-    lower:   PDEVICE_OBJECT,
-) -> NtStatus {
+unsafe fn forward_irp(request: IoRequest<'_, KernelCompleter>, lower: PDEVICE_OBJECT) -> NtStatus {
     // SAFETY: `into_raw_irp` consumes `request`; we must not touch it again.
     // `irp_skip_current_stack` reuses our stack slot for the lower driver;
     // must be called before `IofCallDriver`.
@@ -327,7 +333,8 @@ unsafe fn forward_irp(
     NtStatus::from_raw(status)
 }
 
-// ── AddDevice ─────────────────────────────────────────────────────────────────
+// ── AddDevice
+// ─────────────────────────────────────────────────────────────────
 
 /// Called by the PnP manager when a new keyboard device is enumerated.
 ///
@@ -341,20 +348,14 @@ unsafe fn forward_irp(
 // `extern "system"`. On x64 Windows they are identical at the ABI level,
 // but Rust's type checker compares the ABI string literally.
 #[unsafe(export_name = "AddDevice")]
-pub unsafe extern "C" fn add_device(
-    driver: *mut DRIVER_OBJECT,
-    pdo:    PDEVICE_OBJECT,
-) -> NTSTATUS {
+pub unsafe extern "C" fn add_device(driver: *mut DRIVER_OBJECT, pdo: PDEVICE_OBJECT) -> NTSTATUS {
     // SAFETY: `driver` is valid for the duration of the driver load.
     let status = unsafe { add_device_inner(driver, pdo) };
     status.into_raw()
 }
 
 /// Safe inner body of [`add_device`].
-unsafe fn add_device_inner(
-    driver: *mut DRIVER_OBJECT,
-    pdo:    PDEVICE_OBJECT,
-) -> NtStatus {
+unsafe fn add_device_inner(driver: *mut DRIVER_OBJECT, pdo: PDEVICE_OBJECT) -> NtStatus {
     let mut filter_device: PDEVICE_OBJECT = core::ptr::null_mut();
 
     // Create the filter device object.
@@ -367,8 +368,8 @@ unsafe fn add_device_inner(
             core::mem::size_of::<FilterDeviceExtension>() as u32,
             core::ptr::null_mut(), // no name — filter devices are unnamed
             FILE_DEVICE_KEYBOARD,  // already u32, no cast needed
-            0,           // no device characteristics
-            false as u8, // non-exclusive
+            0,                     // no device characteristics
+            false as u8,           // non-exclusive
             &mut filter_device,
         )
     };
@@ -404,21 +405,26 @@ unsafe fn add_device_inner(
     // SAFETY: both pointers are valid.
     unsafe {
         (*filter_device).StackSize = (*lower).StackSize + 1;
-        (*filter_device).Flags |= (*lower).Flags
-            & (wdk_sys::DO_BUFFERED_IO | wdk_sys::DO_DIRECT_IO);
+        (*filter_device).Flags |=
+            (*lower).Flags & (wdk_sys::DO_BUFFERED_IO | wdk_sys::DO_DIRECT_IO);
         // Clear the initialisation flag — the device is now ready.
         (*filter_device).Flags &= !wdk_sys::DO_DEVICE_INITIALIZING;
     }
 
     // SAFETY: PASSIVE_LEVEL, always safe to call.
     unsafe {
-        DbgPrint(b"[hid-filter] AddDevice -- filter attached\n\0".as_ptr().cast());
+        DbgPrint(
+            b"[hid-filter] AddDevice -- filter attached\n\0"
+                .as_ptr()
+                .cast(),
+        );
     }
 
     NtStatus::SUCCESS
 }
 
-// ── DriverUnload ──────────────────────────────────────────────────────────────
+// ── DriverUnload
+// ──────────────────────────────────────────────────────────────
 
 /// Called when the driver is unloaded.
 ///
@@ -433,7 +439,11 @@ unsafe fn add_device_inner(
 unsafe extern "C" fn driver_unload(driver: *mut DRIVER_OBJECT) {
     // SAFETY: PASSIVE_LEVEL.
     unsafe {
-        DbgPrint(b"[hid-filter] DriverUnload -- detaching\n\0".as_ptr().cast());
+        DbgPrint(
+            b"[hid-filter] DriverUnload -- detaching\n\0"
+                .as_ptr()
+                .cast(),
+        );
     }
 
     // Walk the device object list and detach/delete each filter device we own.
@@ -444,7 +454,7 @@ unsafe extern "C" fn driver_unload(driver: *mut DRIVER_OBJECT) {
         let mut device = (*driver).DeviceObject;
         while !device.is_null() {
             let next = (*device).NextDevice;
-            let ext  = (*device).DeviceExtension.cast::<FilterDeviceExtension>();
+            let ext = (*device).DeviceExtension.cast::<FilterDeviceExtension>();
             let lower = (*ext).lower_device;
             IoDetachDevice(lower);
             IoDeleteDevice(device);
@@ -453,7 +463,8 @@ unsafe extern "C" fn driver_unload(driver: *mut DRIVER_OBJECT) {
     }
 }
 
-// ── Dispatch thunks ───────────────────────────────────────────────────────────
+// ── Dispatch thunks
+// ───────────────────────────────────────────────────────────
 
 /// Builds an [`IoRequest`] from the raw dispatch arguments and routes it
 /// to the correct [`KmdfDriver`] method.
@@ -470,18 +481,12 @@ macro_rules! dispatch_thunk {
         ///
         /// `device` and `irp` are valid non-null pointers supplied by the
         /// I/O manager at the correct IRQL.
-        unsafe extern "C" fn $name(
-            device: PDEVICE_OBJECT,
-            irp:    PIRP,
-        ) -> NTSTATUS {
+        unsafe extern "C" fn $name(device: PDEVICE_OBJECT, irp: PIRP) -> NTSTATUS {
             // SAFETY: pointers are valid per the dispatch callback contract.
             let status = unsafe {
                 // SAFETY: irp is non-null and valid for this dispatch call.
                 let stack = irp_current_stack(irp);
-                let req   = IoRequest::<KernelCompleter>::from_raw(
-                    irp.cast(),
-                    stack.cast(),
-                );
+                let req = IoRequest::<KernelCompleter>::from_raw(irp.cast(), stack.cast());
                 let dev = Device::from_raw(device.cast());
                 HidFilterDriver::$method(&dev, req)
             };
@@ -490,13 +495,14 @@ macro_rules! dispatch_thunk {
     };
 }
 
-dispatch_thunk!(dispatch_create,  on_create);
-dispatch_thunk!(dispatch_close,   on_close);
-dispatch_thunk!(dispatch_read,    on_read);
-dispatch_thunk!(dispatch_power,   on_power);
-dispatch_thunk!(dispatch_pnp,     on_pnp);
+dispatch_thunk!(dispatch_create, on_create);
+dispatch_thunk!(dispatch_close, on_close);
+dispatch_thunk!(dispatch_read, on_read);
+dispatch_thunk!(dispatch_power, on_power);
+dispatch_thunk!(dispatch_pnp, on_pnp);
 
-// ── DriverEntry ───────────────────────────────────────────────────────────────
+// ── DriverEntry
+// ───────────────────────────────────────────────────────────────
 
 /// Windows calls this once when the driver is loaded.
 ///
@@ -506,7 +512,7 @@ dispatch_thunk!(dispatch_pnp,     on_pnp);
 /// I/O manager. This function must be `unsafe extern "system"`.
 #[unsafe(export_name = "DriverEntry")]
 pub unsafe extern "system" fn driver_entry(
-    driver:        *mut DRIVER_OBJECT,
+    driver: *mut DRIVER_OBJECT,
     registry_path: PCUNICODE_STRING,
 ) -> NTSTATUS {
     // SAFETY: pointers are valid per the DriverEntry kernel contract.
@@ -519,7 +525,7 @@ pub unsafe extern "system" fn driver_entry(
 /// initialisation logic lives in a safe function, matching the pattern
 /// used across `microsoft/windows-drivers-rs`.
 unsafe fn driver_entry_inner(
-    driver:         *mut DRIVER_OBJECT,
+    driver: *mut DRIVER_OBJECT,
     _registry_path: PCUNICODE_STRING,
 ) -> NtStatus {
     // SAFETY: PASSIVE_LEVEL.
@@ -531,7 +537,9 @@ unsafe fn driver_entry_inner(
     //
     // SAFETY: `driver` is valid for the lifetime of the driver.
     unsafe {
-        (*driver).DriverExtension.as_mut()
+        (*driver)
+            .DriverExtension
+            .as_mut()
             .expect("DriverExtension must not be null")
             .AddDevice = Some(add_device);
     }
@@ -543,21 +551,17 @@ unsafe fn driver_entry_inner(
     // register dispatch routines (WDK: Writing a DriverEntry Routine).
     unsafe {
         let obj = &mut *driver;
-        obj.MajorFunction[wdk_sys::IRP_MJ_CREATE  as usize] = Some(dispatch_create);
-        obj.MajorFunction[wdk_sys::IRP_MJ_CLOSE   as usize] = Some(dispatch_close);
-        obj.MajorFunction[wdk_sys::IRP_MJ_READ    as usize] = Some(dispatch_read);
-        obj.MajorFunction[wdk_sys::IRP_MJ_POWER   as usize] = Some(dispatch_power);
-        obj.MajorFunction[wdk_sys::IRP_MJ_PNP     as usize] = Some(dispatch_pnp);
+        obj.MajorFunction[wdk_sys::IRP_MJ_CREATE as usize] = Some(dispatch_create);
+        obj.MajorFunction[wdk_sys::IRP_MJ_CLOSE as usize] = Some(dispatch_close);
+        obj.MajorFunction[wdk_sys::IRP_MJ_READ as usize] = Some(dispatch_read);
+        obj.MajorFunction[wdk_sys::IRP_MJ_POWER as usize] = Some(dispatch_power);
+        obj.MajorFunction[wdk_sys::IRP_MJ_PNP as usize] = Some(dispatch_pnp);
         obj.DriverUnload = Some(driver_unload);
     }
 
     // SAFETY: PASSIVE_LEVEL.
     unsafe {
-        DbgPrint(
-            b"[hid-filter] DriverEntry -- ready\n\0"
-                .as_ptr()
-                .cast(),
-        );
+        DbgPrint(b"[hid-filter] DriverEntry -- ready\n\0".as_ptr().cast());
     }
 
     NtStatus::SUCCESS
