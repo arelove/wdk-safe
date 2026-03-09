@@ -1,4 +1,0 @@
-  [2m2026-03-09T20:35:59.840581Z[0m [33m WARN[0m [1;33mwdk_build[0m[33m: [33mNo WDK configurations detected.[0m
-    [2;3mat[0m C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wdk-build-0.5.1\src\lib.rs:1426
-
-cargo::rustc-check-cfg=cfg(driver_model__driver_type, values("WDM","KMDF","UMDF",))
