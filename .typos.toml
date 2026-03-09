@@ -1,4 +1,3 @@
-# Microsoft используют typos-cli в CI для проверки опечаток
 [default.extend-words]
 # kernel-специфичные "слова" которые не опечатки
 "wdk"    = "wdk"

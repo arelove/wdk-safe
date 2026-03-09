@@ -1,1 +1,35 @@
+# Build artifacts
 /target
+**/target/
+
+# Cargo lock files — libraries don't commit lockfiles, binaries do.
+# Driver examples are binaries, so their lockfile is committed.
+# Cargo.lock at workspace root is excluded.
+Cargo.lock
+!examples/**/Cargo.lock
+
+# Editor and OS
+.vscode/
+.idea/
+*.suo
+*.user
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# WDK / driver build outputs
+*.sys
+*.pdb
+*.inf
+!**/*.inx
+*.cat
+*.cer
+*.pfx
+package/
+DriversPackage/
+
+# cargo-make
+.cargo-make/
+
+# typos false-positive cache
+.typos-cache/

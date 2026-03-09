@@ -13,7 +13,7 @@
 //! ```
 
 /// Buffer transfer method for an IOCTL call.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[repr(u32)]
 pub enum TransferMethod {
     /// `METHOD_BUFFERED` — kernel copies buffers via a system buffer.
@@ -27,7 +27,7 @@ pub enum TransferMethod {
 }
 
 /// Required access for an IOCTL call.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[repr(u32)]
 pub enum RequiredAccess {
     /// `FILE_ANY_ACCESS` — no specific access required.
@@ -57,7 +57,7 @@ pub enum RequiredAccess {
 /// assert_eq!(IOCTL_ECHO.device_type(), 0x8000);
 /// assert_eq!(IOCTL_ECHO.function(), 0x800);
 /// ```
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct IoControlCode(u32);
 
 impl IoControlCode {
@@ -117,6 +117,18 @@ impl IoControlCode {
             _ => TransferMethod::Neither,
         }
     }
+
+    /// Returns the [`RequiredAccess`] field (bits 15–14).
+    #[must_use]
+    #[inline]
+    pub const fn access(self) -> RequiredAccess {
+        match (self.0 >> 14) & 0b11 {
+            0 => RequiredAccess::Any,
+            1 => RequiredAccess::Read,
+            2 => RequiredAccess::Write,
+            _ => RequiredAccess::ReadWrite,
+        }
+    }
 }
 
 impl core::fmt::Debug for IoControlCode {
@@ -125,6 +137,7 @@ impl core::fmt::Debug for IoControlCode {
             .field("device_type", &format_args!("{:#06X}", self.device_type()))
             .field("function", &format_args!("{:#05X}", self.function()))
             .field("method", &self.method())
+            .field("access", &self.access())
             .field("raw", &format_args!("{:#010X}", self.0))
             .finish()
     }
@@ -138,6 +151,8 @@ mod tests {
 
     const TEST_IOCTL: IoControlCode =
         IoControlCode::new(0x8000, 0x800, TransferMethod::Buffered, RequiredAccess::Any);
+
+    // ── Field accessors ───────────────────────────────────────────────────────
 
     #[test]
     fn device_type_roundtrip() {
@@ -155,6 +170,13 @@ mod tests {
     }
 
     #[test]
+    fn access_is_any() {
+        assert_eq!(TEST_IOCTL.access(), RequiredAccess::Any);
+    }
+
+    // ── Raw value ─────────────────────────────────────────────────────────────
+
+    #[test]
     fn raw_value_is_deterministic() {
         // (0x8000 << 16) | (0 << 14) | (0x800 << 2) | 0 = 0x80002000
         assert_eq!(TEST_IOCTL.into_raw(), 0x8000_2000);
@@ -166,10 +188,124 @@ mod tests {
         assert_eq!(IoControlCode::from_raw(raw).into_raw(), raw);
     }
 
+    // ── Const context ─────────────────────────────────────────────────────────
+
     #[test]
     fn const_in_const_context() {
-        const CODE: IoControlCode =
-            IoControlCode::new(0x0001, 0x900, TransferMethod::Neither, RequiredAccess::ReadWrite);
+        const CODE: IoControlCode = IoControlCode::new(
+            0x0001,
+            0x900,
+            TransferMethod::Neither,
+            RequiredAccess::ReadWrite,
+        );
         assert_eq!(CODE.device_type(), 0x0001);
+    }
+
+    // ── All TransferMethod variants ───────────────────────────────────────────
+
+    #[test]
+    fn method_in_direct() {
+        let code = IoControlCode::new(0x8000, 0x800, TransferMethod::InDirect, RequiredAccess::Any);
+        assert_eq!(code.method(), TransferMethod::InDirect);
+    }
+
+    #[test]
+    fn method_out_direct() {
+        let code = IoControlCode::new(
+            0x8000,
+            0x800,
+            TransferMethod::OutDirect,
+            RequiredAccess::Any,
+        );
+        assert_eq!(code.method(), TransferMethod::OutDirect);
+    }
+
+    #[test]
+    fn method_neither() {
+        let code = IoControlCode::new(0x8000, 0x800, TransferMethod::Neither, RequiredAccess::Any);
+        assert_eq!(code.method(), TransferMethod::Neither);
+    }
+
+    // ── All RequiredAccess variants ───────────────────────────────────────────
+
+    #[test]
+    fn access_read() {
+        let code = IoControlCode::new(
+            0x8000,
+            0x800,
+            TransferMethod::Buffered,
+            RequiredAccess::Read,
+        );
+        assert_eq!(code.access(), RequiredAccess::Read);
+    }
+
+    #[test]
+    fn access_write() {
+        let code = IoControlCode::new(
+            0x8000,
+            0x800,
+            TransferMethod::Buffered,
+            RequiredAccess::Write,
+        );
+        assert_eq!(code.access(), RequiredAccess::Write);
+    }
+
+    #[test]
+    fn access_read_write() {
+        let code = IoControlCode::new(
+            0x8000,
+            0x800,
+            TransferMethod::Buffered,
+            RequiredAccess::ReadWrite,
+        );
+        assert_eq!(code.access(), RequiredAccess::ReadWrite);
+        // (0x8000 << 16) | (3 << 14) | (0x800 << 2) | 0 = 0x8000_E000
+        assert_eq!(code.into_raw(), 0x8000_E000);
+    }
+
+    // ── Different function codes don't collide ────────────────────────────────
+
+    #[test]
+    fn different_functions_produce_different_codes() {
+        let a = IoControlCode::new(0x8000, 0x800, TransferMethod::Buffered, RequiredAccess::Any);
+        let b = IoControlCode::new(0x8000, 0x801, TransferMethod::Buffered, RequiredAccess::Any);
+        assert_ne!(a.into_raw(), b.into_raw());
+    }
+
+    #[test]
+    fn different_device_types_produce_different_codes() {
+        let a = IoControlCode::new(0x8000, 0x800, TransferMethod::Buffered, RequiredAccess::Any);
+        let b = IoControlCode::new(0x0022, 0x800, TransferMethod::Buffered, RequiredAccess::Any);
+        assert_ne!(a.into_raw(), b.into_raw());
+    }
+
+    // ── Debug format ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn debug_contains_raw_hex() {
+        let s = format!("{TEST_IOCTL:?}");
+        assert!(s.contains("0x80002000"), "got: {s}");
+    }
+
+    #[test]
+    fn debug_contains_device_type() {
+        let s = format!("{TEST_IOCTL:?}");
+        assert!(s.contains("0x8000"), "got: {s}");
+    }
+
+    // ── Equality ──────────────────────────────────────────────────────────────
+
+    #[test]
+    fn equal_codes_compare_equal() {
+        let a = IoControlCode::new(0x8000, 0x800, TransferMethod::Buffered, RequiredAccess::Any);
+        let b = IoControlCode::new(0x8000, 0x800, TransferMethod::Buffered, RequiredAccess::Any);
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn copy_semantics() {
+        let a = TEST_IOCTL;
+        let b = a; // Copy
+        assert_eq!(a, b);
     }
 }

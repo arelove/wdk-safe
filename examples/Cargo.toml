@@ -7,7 +7,7 @@
 
 [workspace]
 resolver = "2"
-members  = ["hid-filter"]
+members = ["hid-filter/hid-filter"]
 
 [workspace.package]
 authors      = ["arelove"]
@@ -17,7 +17,7 @@ repository   = "https://github.com/arelove/wdk-safe"
 rust-version = "1.78.0"
 
 [workspace.dependencies]
-wdk-safe  = { path = "../../crates/wdk-safe" }
+wdk-safe  = { path = "../crates/wdk-safe" }
 wdk       = "0.4.1"
 wdk-alloc = "0.4.1"
 wdk-build = "0.5.1"

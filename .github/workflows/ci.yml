@@ -17,7 +17,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: crate-ci/typos@master
+      - uses: crate-ci/typos@v1.32.0  # pinned — не ломается при выходе новых версий
 
   # ── 2. Formatting ──────────────────────────────────────────────────────────
   fmt:
@@ -28,21 +28,29 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: rustfmt
-      - name: cargo fmt
+      - name: cargo fmt — workspace
         run: cargo fmt --all -- --check
+      - name: cargo fmt — examples/hid-filter (separate workspace)
+        run: cargo fmt --all -- --check
+        working-directory: examples/hid-filter
 
   # ── 3. Clippy ──────────────────────────────────────────────────────────────
   clippy:
     name: Clippy
     runs-on: windows-latest
-    needs: fmt
+    needs: fmt          # fmt должен быть зелёным перед lint
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
-      - name: cargo clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "wdk-safe-clippy"
+      - name: cargo clippy — workspace
         run: cargo clippy --all-targets --all-features -- -D warnings
+      # hid-filter требует eWDK и не может быть проверен на голом runner-е.
+      # Clippy для него запускается отдельно в eWDK job (будущий Phase 3 CI).
 
   # ── 4. Unit tests (host, no WDK required) ─────────────────────────────────
   test:
@@ -52,7 +60,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: cargo test
-        # Only runs tests that are cfg(test) and do not link against WDK.
-        # Kernel-mode runtime tests require a separate Hyper-V test VM.
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "wdk-safe-test"
+      - name: cargo test (unit + doc tests)
+        # --doc запускает doc-tests явно; они тоже должны быть зелёными.
+        # Kernel-mode runtime тесты — отдельный Hyper-V job (Phase 3).
         run: cargo test -p wdk-safe -p wdk-safe-macros
+
+  # ── 5. Doc tests (отдельно для наглядности в PR-чеке) ─────────────────────
+  doctest:
+    name: Doc Tests
+    runs-on: windows-latest
+    needs: clippy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "wdk-safe-doctest"
+      - name: cargo test --doc
+        run: cargo test --doc -p wdk-safe
