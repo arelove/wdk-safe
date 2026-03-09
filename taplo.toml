@@ -1,0 +1,7 @@
+# Форматирование TOML — Microsoft используют taplo
+[formatting]
+reorder_keys        = true
+reorder_arrays      = true
+column_width        = 80
+indent_string       = "    "
+trailing_newline    = true

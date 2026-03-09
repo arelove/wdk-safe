@@ -1,0 +1,66 @@
+; Copyright (c) Microsoft Corporation
+; SPDX-License-Identifier: MIT OR Apache-2.0
+;
+; hid-filter.inx
+;
+; INF template for the HID keyboard upper filter driver.
+; cargo-make expands this into a signed .inf + .cat pair during packaging.
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = HIDClass
+ClassGuid   = {745a17a0-74d3-11d0-b6fe-00a0c90f57da}
+Provider    = %ManufacturerName%
+DriverVer   =
+CatalogFile = hid-filter.cat
+PnpLockdown = 1
+
+[DestinationDirs]
+DefaultDestDir = 12  ; %windir%\system32\drivers
+
+; ── Manufacturer / Models ────────────────────────────────────────────────────
+
+[Manufacturer]
+%ManufacturerName% = Standard, NT$ARCH$
+
+[Standard.NT$ARCH$]
+%DeviceDesc% = HidFilter_Install, HID\VID_045E&PID_0750  ; example: Microsoft keyboard
+
+; ── Install ──────────────────────────────────────────────────────────────────
+
+[HidFilter_Install.NT]
+CopyFiles = HidFilter_CopyFiles
+
+[HidFilter_CopyFiles]
+hid_filter.sys
+
+[HidFilter_Install.NT.HW]
+AddReg = HidFilter_AddReg
+
+; Register as an upper filter on the HID device.
+[HidFilter_AddReg]
+HKR,,"UpperFilters",0x00010008,"hid-filter"
+
+[HidFilter_Install.NT.Services]
+AddService = hid-filter, , HidFilter_Service
+
+[HidFilter_Service]
+ServiceType    = 1   ; SERVICE_KERNEL_DRIVER
+StartType      = 3   ; SERVICE_DEMAND_START
+ErrorControl   = 1   ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\hid_filter.sys
+
+; ── Source media ─────────────────────────────────────────────────────────────
+
+[SourceDisksNames]
+1 = %DiskName%
+
+[SourceDisksFiles]
+hid_filter.sys = 1
+
+; ── Strings ──────────────────────────────────────────────────────────────────
+
+[Strings]
+ManufacturerName = "arelove"
+DeviceDesc       = "HID Keyboard Filter (wdk-safe demo)"
+DiskName         = "HID Filter Installation Disk"

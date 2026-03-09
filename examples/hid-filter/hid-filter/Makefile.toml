@@ -1,0 +1,25 @@
+###############################################################################
+# Makefile.toml — cargo-make tasks for hid-filter
+#
+# Usage (inside an eWDK developer prompt):
+#
+#   cargo make                   # build + package (debug)
+#   cargo make default --release # build + package (release)
+#
+# This file extends the standard rust-driver-makefile.toml provided by
+# wdk-build, which handles inf2cat, infverif, and driver signing.
+###############################################################################
+
+extend = "target/rust-driver-makefile.toml"
+
+[config]
+load_script = '''
+#!@rust
+//! ```cargo
+//! [dependencies]
+//! wdk-build = "0.5.1"
+//! ```
+#![allow(unused_doc_comments)]
+
+wdk_build::cargo_make::load_rust_driver_makefile()?
+'''

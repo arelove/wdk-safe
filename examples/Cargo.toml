@@ -1,0 +1,33 @@
+# Copyright (c) 2025 arelove
+
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# NOTE: This example has its own workspace because WDK only supports one
+# driver configuration per Cargo workspace. This mirrors the layout used in
+# microsoft/Windows-rust-driver-samples.
+
+[workspace]
+resolver = "2"
+members  = ["hid-filter"]
+
+[workspace.package]
+authors      = ["arelove"]
+edition      = "2021"
+license      = "MIT OR Apache-2.0"
+repository   = "https://github.com/arelove/wdk-safe"
+rust-version = "1.78.0"
+
+[workspace.dependencies]
+wdk       = "0.4.1"
+wdk-alloc = "0.4.1"
+wdk-build = "0.5.1"
+wdk-panic = "0.4.1"
+wdk-sys   = "0.5.1"
+wdk-safe  = { path = "../../crates/wdk-safe" }
+
+[workspace.lints.rust]
+missing_docs           = "warn"
+unsafe_op_in_unsafe_fn = "warn"
+
+[workspace.lints.clippy]
+all      = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }

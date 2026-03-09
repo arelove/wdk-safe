@@ -1,0 +1,14 @@
+C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\deps\serde-70fd2ae05ec0fe49.d: C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\build\serde-11a2c548684605cf\out/private.rs
+
+C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\deps\libserde-70fd2ae05ec0fe49.rlib: C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\build\serde-11a2c548684605cf\out/private.rs
+
+C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\deps\libserde-70fd2ae05ec0fe49.rmeta: C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\build\serde-11a2c548684605cf\out/private.rs
+
+C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs:
+C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs:
+C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs:
+C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs:
+C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs:
+C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\build\serde-11a2c548684605cf\out/private.rs:
+
+# env-dep:OUT_DIR=C:\\Programming\\Projects\\Rust\\wdk-safe\\wdk-safe\\target\\debug\\build\\serde-11a2c548684605cf\\out

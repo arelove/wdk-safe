@@ -1,0 +1,1 @@
+{"rustc":7895727629726570510,"features":"","declared_features":"","target":0,"profile":0,"path":0,"deps":[[9745300098116030119,"build_script_build",false,14396297029509242661],[14395497854548354774,"build_script_build",false,4334129606941854811]],"local":[{"Precalculated":"0.4.1"}],"rustflags":["-C","target-feature=+crt-static"],"config":0,"compile_kind":0}

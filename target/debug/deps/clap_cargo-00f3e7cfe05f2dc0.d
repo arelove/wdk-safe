@@ -1,0 +1,11 @@
+C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\deps\clap_cargo-00f3e7cfe05f2dc0.d: C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\lib.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\features.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\manifest.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\workspace.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\style.rs
+
+C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\deps\libclap_cargo-00f3e7cfe05f2dc0.rlib: C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\lib.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\features.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\manifest.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\workspace.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\style.rs
+
+C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\deps\libclap_cargo-00f3e7cfe05f2dc0.rmeta: C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\lib.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\features.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\manifest.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\workspace.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\style.rs
+
+C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\lib.rs:
+C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\features.rs:
+C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\manifest.rs:
+C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\workspace.rs:
+C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clap-cargo-0.15.2\src\style.rs:

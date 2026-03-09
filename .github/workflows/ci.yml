@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  # ── 1. Typo check ──────────────────────────────────────────────────────────
+  typos:
+    name: Typos
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: crate-ci/typos@master
+
+  # ── 2. Formatting ──────────────────────────────────────────────────────────
+  fmt:
+    name: Formatting
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+      - name: cargo fmt
+        run: cargo fmt --all -- --check
+
+  # ── 3. Clippy ──────────────────────────────────────────────────────────────
+  clippy:
+    name: Clippy
+    runs-on: windows-latest
+    needs: fmt
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - name: cargo clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  # ── 4. Unit tests (host, no WDK required) ─────────────────────────────────
+  test:
+    name: Unit Tests
+    runs-on: windows-latest
+    needs: clippy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: cargo test
+        # Only runs tests that are cfg(test) and do not link against WDK.
+        # Kernel-mode runtime tests require a separate Hyper-V test VM.
+        run: cargo test -p wdk-safe -p wdk-safe-macros

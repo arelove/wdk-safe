@@ -1,0 +1,9 @@
+# Microsoft используют typos-cli в CI для проверки опечаток
+[default.extend-words]
+# kernel-специфичные "слова" которые не опечатки
+"wdk"    = "wdk"
+"kmdf"   = "kmdf"
+"umdf"   = "umdf"
+"irp"    = "irp"
+"ioctl"  = "ioctl"
+"ntddk"  = "ntddk"

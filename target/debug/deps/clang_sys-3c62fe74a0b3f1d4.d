@@ -1,0 +1,14 @@
+C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\deps\clang_sys-3c62fe74a0b3f1d4.d: C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clang-sys-1.8.1\src\lib.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clang-sys-1.8.1\src\support.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clang-sys-1.8.1\src\link.rs C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\build\clang-sys-1b11a962c1320c84\out/macros.rs C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\build\clang-sys-1b11a962c1320c84\out/common.rs C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\build\clang-sys-1b11a962c1320c84\out/dynamic.rs
+
+C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\deps\libclang_sys-3c62fe74a0b3f1d4.rlib: C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clang-sys-1.8.1\src\lib.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clang-sys-1.8.1\src\support.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clang-sys-1.8.1\src\link.rs C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\build\clang-sys-1b11a962c1320c84\out/macros.rs C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\build\clang-sys-1b11a962c1320c84\out/common.rs C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\build\clang-sys-1b11a962c1320c84\out/dynamic.rs
+
+C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\deps\libclang_sys-3c62fe74a0b3f1d4.rmeta: C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clang-sys-1.8.1\src\lib.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clang-sys-1.8.1\src\support.rs C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clang-sys-1.8.1\src\link.rs C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\build\clang-sys-1b11a962c1320c84\out/macros.rs C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\build\clang-sys-1b11a962c1320c84\out/common.rs C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\build\clang-sys-1b11a962c1320c84\out/dynamic.rs
+
+C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clang-sys-1.8.1\src\lib.rs:
+C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clang-sys-1.8.1\src\support.rs:
+C:\Users\Ar3love\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\clang-sys-1.8.1\src\link.rs:
+C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\build\clang-sys-1b11a962c1320c84\out/macros.rs:
+C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\build\clang-sys-1b11a962c1320c84\out/common.rs:
+C:\Programming\Projects\Rust\wdk-safe\wdk-safe\target\debug\build\clang-sys-1b11a962c1320c84\out/dynamic.rs:
+
+# env-dep:OUT_DIR=C:\\Programming\\Projects\\Rust\\wdk-safe\\wdk-safe\\target\\debug\\build\\clang-sys-1b11a962c1320c84\\out
