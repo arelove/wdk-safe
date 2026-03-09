@@ -17,7 +17,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: crate-ci/typos@v1.32.0  # pinned — не ломается при выходе новых версий
+      - name: Install typos-cli
+        run: cargo install typos-cli --locked
+      - name: Run typos
+        run: typos
 
   # ── 2. Formatting ──────────────────────────────────────────────────────────
   fmt:
@@ -38,7 +41,7 @@ jobs:
   clippy:
     name: Clippy
     runs-on: windows-latest
-    needs: fmt          # fmt должен быть зелёным перед lint
+    needs: fmt
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -49,8 +52,6 @@ jobs:
           shared-key: "wdk-safe-clippy"
       - name: cargo clippy — workspace
         run: cargo clippy --all-targets --all-features -- -D warnings
-      # hid-filter требует eWDK и не может быть проверен на голом runner-е.
-      # Clippy для него запускается отдельно в eWDK job (будущий Phase 3 CI).
 
   # ── 4. Unit tests (host, no WDK required) ─────────────────────────────────
   test:
@@ -64,11 +65,9 @@ jobs:
         with:
           shared-key: "wdk-safe-test"
       - name: cargo test (unit + doc tests)
-        # --doc запускает doc-tests явно; они тоже должны быть зелёными.
-        # Kernel-mode runtime тесты — отдельный Hyper-V job (Phase 3).
         run: cargo test -p wdk-safe -p wdk-safe-macros
 
-  # ── 5. Doc tests (отдельно для наглядности в PR-чеке) ─────────────────────
+  # ── 5. Doc tests ───────────────────────────────────────────────────────────
   doctest:
     name: Doc Tests
     runs-on: windows-latest
