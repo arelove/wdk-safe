@@ -1,5 +1,4 @@
 # wdk-safe
-
 [![CI](https://github.com/arelove/wdk-safe/actions/workflows/ci.yml/badge.svg)](https://github.com/arelove/wdk-safe/actions/workflows/ci.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 [![Tests](https://img.shields.io/badge/tests-91%20passing-brightgreen)](#testing)
@@ -49,20 +48,36 @@ patterns at compile time:
 
 A complete KMDF upper-filter driver for HID keyboards demonstrating every
 abstraction in the library. Logs each keystroke via `DbgPrint` (visible in
-WinDbg). Zero `unsafe` in driver dispatch code.
+WinDbg / DebugView). Zero `unsafe` in driver dispatch code.
 
 Key implementation details:
-- `KernelCompleter` — implements `IrpCompleter` via `IoCompleteRequest`
+- `KernelCompleter` — implements `IrpCompleter` via `IofCompleteRequest`
 - `FilterDeviceExtension` — per-device state, no global mutable state
 - `AddDevice` — `IoAttachDeviceToDeviceStack` + stack size accounting
 - `dispatch_thunk!` macro — eliminates boilerplate dispatch functions
 - Power and PnP forwarding down the device stack
 
+**Build results (eWDK 26100.6584, KMDF 1.33, Rust nightly):**
+```
+cargo build  →  SUCCESS, 0 errors, 0 warnings
+cargo make   →  SUCCESS — .sys signed, inf2cat OK, infverif VALID
+```
+
+**Key INF/INX lessons learned** (for future reference):
+
+- wdk-build looks for `hid_filter.inx` (underscore), not `hid-filter.inx`
+- `DestinationDirs` must use DIRID `13` (driver store) — required by `infverif /w` on Win11
+- `[Manufacturer]` decoration: `NT$ARCH$.10.0...16299` (three dots = build number wildcard)
+- `AddService` flag must be `0x00000002` (`SPSVCINST_ASSOCSERVICE`) — required by `infverif /w`
+- Install section names (`[HidFilter_Install]`, `.HW`, `.Services`) must **not** carry the
+  `.NT$ARCH$` suffix — infverif looks up the exact name from `[Standard.*]` and fails if it
+  finds only the decorated variant
+
 ### 🚧 Phase 3 — In progress
 
-- [ ] First successful `cargo build` in eWDK developer prompt
-- [ ] `cargo make` — package `.sys` + `.inf`
-- [ ] Install in Hyper-V test VM and verify via WinDbg
+- [x] `cargo build` — SUCCESS in eWDK developer prompt
+- [x] `cargo make` — `.sys` + `.inf` packaged, signed, infverif VALID
+- [ ] Install in Hyper-V test VM and verify via WinDbg / DebugView
 - [ ] Integration tests — user-mode client sends `DeviceIoControl`
 - [ ] Open Discussion in `microsoft/windows-drivers-rs`
 - [ ] Publish to crates.io
@@ -160,6 +175,20 @@ Building the HID filter example requires the full WDK toolchain:
 # Inside an eWDK developer prompt:
 cd examples/hid-filter/hid-filter
 cargo make
+```
+
+Successful output ends with:
+```
+infverif → INF is VALID
+[cargo-make] INFO - Build Done in ~3 seconds.
+```
+
+The package is produced in `examples/target/debug/hid_filter_package/`:
+```
+hid_filter.sys   — signed kernel driver binary
+hid_filter.inf   — stamped INF (DriverVer filled by stampinf)
+hid_filter.cat   — signed catalog
+hid_filter.pdb   — debug symbols
 ```
 
 ---
