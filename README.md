@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/arelove/wdk-safe/actions/workflows/ci.yml/badge.svg)](https://github.com/arelove/wdk-safe/actions/workflows/ci.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
+[![Tests](https://img.shields.io/badge/tests-91%20passing-brightgreen)](#testing)
 
 Safe, idiomatic Rust abstractions for Windows kernel-mode driver development,
 built on top of [`wdk-sys`](https://crates.io/crates/wdk-sys) from
@@ -26,36 +27,66 @@ patterns at compile time:
 | `IRP` must be completed exactly once — forgetting it hangs the system | `Irp` consumes itself on `complete()` — double-complete is a compile error |
 | IOCTL buffer types are untyped `*mut u8` | `define_ioctl!` declares input/output types checked at compile time |
 | Every kernel struct access requires `unsafe` | Safe wrappers for `DEVICE_OBJECT`, `IO_STACK_LOCATION`, etc. |
-| `STATUS_*` are bare `i32` constants | `NtStatus` newtype with `is_success()`, `is_error()`, `Debug` |
+| `STATUS_*` are bare `i32` constants | `NtStatus` newtype with `is_success()`, `is_error()`, severity bits |
 
 ---
 
 ## Current Progress
 
-### ✅ Phase 1 — Core library (complete, 17 tests passing)
+### ✅ Phase 1 — Core library (complete)
 
 | Module | What it provides |
 |--------|-----------------|
-| `error` | `NtStatus` — strongly-typed NTSTATUS with `is_success()`, `is_error()` |
-| `ioctl` | `IoControlCode` — const-constructible IOCTL code builder |
-| `irp` | `Irp` — ownership-based IRP wrapper, compiler-enforced completion |
-| `device` | `Device` — safe `DEVICE_OBJECT` reference |
-| `request` | `IoRequest` — dispatch abstraction wrapping `Irp` + stack location |
-| `driver` | `KmdfDriver` trait — implement this for your driver |
-| `wdk-safe-macros` | `define_ioctl!` — type-safe IOCTL declaration macro |
+| `error` | `NtStatus` — strongly-typed NTSTATUS: `is_success()`, `is_error()`, `is_warning()`, `is_informational()`, `Hash`, `Copy` |
+| `ioctl` | `IoControlCode` — const-constructible IOCTL builder with `method()` and `access()` decoders |
+| `irp` | `Irp<C>` — ownership-based IRP wrapper with drop bomb; `IrpCompleter` trait; `NoopCompleter` for tests |
+| `device` | `Device` — safe non-owning `DEVICE_OBJECT` reference |
+| `request` | `IoRequest<C>` — dispatch abstraction: IOCTL code, buffer lengths, system buffer, `complete_with_information` |
+| `driver` | `KmdfDriver<C>` trait — override only the IRP major functions you handle |
+| `wdk-safe-macros` | `define_ioctl!` — type-safe IOCTL macro with optional `method` and `access` parameters |
 
-### 🚧 Phase 2 — HID keyboard filter example (in progress)
+### ✅ Phase 2 — HID keyboard filter example (complete)
 
-A complete KMDF upper-filter driver for HID keyboards that demonstrates
-every abstraction in the library. Logs each keystroke via `DbgPrint`
-(visible in WinDbg). Built on top of `wdk-safe` with zero `unsafe` in
-driver dispatch code.
+A complete KMDF upper-filter driver for HID keyboards demonstrating every
+abstraction in the library. Logs each keystroke via `DbgPrint` (visible in
+WinDbg). Zero `unsafe` in driver dispatch code.
 
-### 📋 Phase 3 — Planned
+Key implementation details:
+- `KernelCompleter` — implements `IrpCompleter` via `IoCompleteRequest`
+- `FilterDeviceExtension` — per-device state, no global mutable state
+- `AddDevice` — `IoAttachDeviceToDeviceStack` + stack size accounting
+- `dispatch_thunk!` macro — eliminates boilerplate dispatch functions
+- Power and PnP forwarding down the device stack
 
-- Integration tests via `DeviceIoControl` from user-mode test client
-- Hyper-V test VM automation
-- Publish to crates.io
+### 🚧 Phase 3 — In progress
+
+- [ ] First successful `cargo build` in eWDK developer prompt
+- [ ] `cargo make` — package `.sys` + `.inf`
+- [ ] Install in Hyper-V test VM and verify via WinDbg
+- [ ] Integration tests — user-mode client sends `DeviceIoControl`
+- [ ] Open Discussion in `microsoft/windows-drivers-rs`
+- [ ] Publish to crates.io
+
+---
+
+## Testing
+
+Unit tests run on any Windows host — no WDK installation required:
+
+```powershell
+cargo test -p wdk-safe -p wdk-safe-macros
+```
+
+```
+running 76 tests ... ok   (unit tests: error, ioctl, irp, request, device, driver)
+running 15 tests ... ok   (macro integration: define_ioctl! all variants)
+Doc-tests: 3 passed, 2 ignored (kernel-only examples requiring wdk-sys)
+```
+
+The two `ignored` doc-tests are kernel-only code examples in documentation
+(they use `wdk-sys` types unavailable on the host). They are intentionally
+marked `rust,ignore` — the code is valid and shown in rustdoc, but cannot
+be compiled without a WDK installation.
 
 ---
 
@@ -70,11 +101,12 @@ Implement `KmdfDriver` for your driver struct:
 
 ```rust
 use wdk_safe::{Device, IoRequest, KmdfDriver, NtStatus};
+use wdk_safe::irp::NoopCompleter;
 
 struct MyDriver;
 
-impl KmdfDriver for MyDriver {
-    fn on_device_control(_device: &Device, request: IoRequest<'_>) -> NtStatus {
+impl KmdfDriver<NoopCompleter> for MyDriver {
+    fn on_device_control(_device: &Device, request: IoRequest<'_, NoopCompleter>) -> NtStatus {
         request.complete(NtStatus::SUCCESS)
     }
 }
@@ -85,13 +117,26 @@ Declare type-safe IOCTLs with the `define_ioctl!` macro:
 ```rust
 use wdk_safe::define_ioctl;
 
-#[repr(C)]
-pub struct EchoRequest  { pub value: u32 }
-#[repr(C)]
-pub struct EchoResponse { pub value: u32 }
+#[repr(C)] pub struct EchoRequest  { pub value: u32 }
+#[repr(C)] pub struct EchoResponse { pub value: u32 }
 
+// Minimal — defaults to METHOD_BUFFERED, FILE_ANY_ACCESS
 define_ioctl!(IOCTL_ECHO, 0x8000u16, 0x800u16, EchoRequest => EchoResponse);
+
+// Explicit transfer method and required access
+define_ioctl!(
+    IOCTL_READ_DATA,
+    0x8000u16, 0x801u16,
+    EchoRequest => EchoResponse,
+    method = InDirect,
+    access = Read,
+);
 ```
+
+The macro generates:
+- `pub const IOCTL_ECHO: IoControlCode` — the validated code constant
+- `pub type IoctlEchoInput = EchoRequest` — input buffer type alias
+- `pub type IoctlEchoOutput = EchoResponse` — output buffer type alias
 
 ---
 
@@ -103,11 +148,11 @@ Unit tests run on any Windows host — no WDK required:
 cargo test -p wdk-safe -p wdk-safe-macros
 ```
 
-Building the HID filter example requires:
+Building the HID filter example requires the full WDK toolchain:
 
 | Tool | Version | Install |
 |------|---------|---------|
-| [eWDK NI](https://learn.microsoft.com/en-us/windows-hardware/drivers/develop/using-the-enterprise-wdk) | 22H2 | Download from Microsoft |
+| [eWDK](https://learn.microsoft.com/en-us/windows-hardware/drivers/develop/using-the-enterprise-wdk) | 25H2 (26100.x) | Download from Microsoft |
 | [LLVM](https://github.com/llvm/llvm-project/releases/tag/llvmorg-17.0.6) | 17.0.6 | `winget install -i LLVM.LLVM --version 17.0.6` |
 | cargo-make | latest | `cargo install cargo-make` |
 
@@ -124,12 +169,12 @@ cargo make
 ```
 wdk-safe/
 ├── crates/
-│   ├── wdk-safe/          # Core safe abstractions
+│   ├── wdk-safe/          # Core safe abstractions (91 tests)
 │   └── wdk-safe-macros/   # Procedural macros (define_ioctl!)
 ├── examples/
-│   └── hid-filter/        # HID keyboard filter driver (WIP)
+│   └── hid-filter/        # Complete KMDF HID keyboard filter driver
 └── tests/
-    └── integration/       # User-mode integration tests (planned)
+    └── integration/       # User-mode integration tests (Phase 3)
 ```
 
 ---
