@@ -212,6 +212,47 @@ Use [DebugView](https://learn.microsoft.com/en-us/sysinternals/downloads/debugvi
 [null-device] DriverUnload -- cleaning up
 ```
 
+### Testing `ioctl-echo` — usermode round-trip
+
+A test utility is included at
+[`examples/ioctl-echo/ioctl-echo-test`](examples/ioctl-echo/ioctl-echo-test/).
+Build on the host (no WDK needed), copy the `.exe` to the VM:
+
+```powershell
+# On host
+cd examples/ioctl-echo/ioctl-echo-test
+cargo build --release
+# Copy target/release/ioctl_echo_test.exe to the VM
+```
+
+```cmd
+:: In the VM (ioctl-echo driver must be running)
+ioctl_echo_test.exe
+ioctl_echo_test.exe 12345
+ioctl_echo_test.exe 0xDEADBEEF
+```
+
+Expected output:
+
+```
+=== ioctl-echo test ===
+Device : \\.\WdkSafeEcho
+IOCTL  : 0x80002000
+Send   : 0xDEADBEEF (3735928559)
+Opened device handle: OK
+Received: 0xDEADBEEF (3735928559)
+Bytes returned: 4
+✓ PASS — echo correct
+```
+
+DebugView will show:
+
+```
+[ioctl-echo] IRP_MJ_CREATE
+[ioctl-echo] echoing value
+[ioctl-echo] IRP_MJ_CLOSE
+```
+
 ---
 
 ## Testing (host, no WDK required)
