@@ -8,10 +8,10 @@
 //!
 //! # Lifetime model
 //!
-//! `Device<'stack>` is a **non-owning, lifetime-scoped reference**. The `'stack`
-//! lifetime is bound to the dispatch callback stack frame — the compiler
-//! prevents holding a `Device` past the point where the I/O manager's pointer
-//! is valid.
+//! `Device<'stack>` is a **non-owning, lifetime-scoped reference**. The
+//! `'stack` lifetime is bound to the dispatch callback stack frame — the
+//! compiler prevents holding a `Device` past the point where the I/O manager's
+//! pointer is valid.
 //!
 //! The I/O manager owns `DEVICE_OBJECT` memory from device creation until
 //! `IoDeleteDevice` is called in `DriverUnload` (or when a `PnP` remove IRP

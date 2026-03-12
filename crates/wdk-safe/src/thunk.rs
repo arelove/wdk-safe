@@ -62,15 +62,15 @@
 /// - `$DriverType` — a type implementing [`WdmDriver<$CompleterType>`].
 /// - `$method` — the [`WdmDriver`] method to call (e.g. `on_read`).
 /// - `$CompleterType` — the [`IrpCompleter`](crate::IrpCompleter) type.
-/// - `$irp_stack_fn` — a function with signature
-///   `unsafe fn(*mut IRP) -> *mut IO_STACK_LOCATION` that implements
-///   `IoGetCurrentIrpStackLocation`. This must be in scope at the call site
-///   and is passed explicitly to avoid magic scope requirements.
+/// - `$irp_stack_fn` — a function with signature `unsafe fn(*mut IRP) -> *mut
+///   IO_STACK_LOCATION` that implements `IoGetCurrentIrpStackLocation`. This
+///   must be in scope at the call site and is passed explicitly to avoid magic
+///   scope requirements.
 ///
 /// # Safety contract of the generated function
 ///
-/// - `device` and `irp` must be valid non-null pointers supplied by the
-///   I/O manager at the correct IRQL.
+/// - `device` and `irp` must be valid non-null pointers supplied by the I/O
+///   manager at the correct IRQL.
 /// - `$irp_stack_fn` must return the correct `IO_STACK_LOCATION` for `irp`.
 ///
 /// [`WdmDriver`]: crate::WdmDriver

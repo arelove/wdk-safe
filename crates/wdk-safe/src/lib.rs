@@ -64,10 +64,9 @@ pub use driver::WdmDriver;
 pub use error::NtStatus;
 pub use ioctl::IoControlCode;
 pub use irp::{IrpCompleter, NoopCompleter};
-pub use request::IoRequest;
-pub use wdk_safe_macros::define_ioctl;
-
 // Re-export test utilities when the feature is enabled. This allows driver
 // crates to write their own unit tests without duplicating these helpers.
 #[cfg(any(test, feature = "test-utils"))]
 pub use irp::{TrackingCompleter, TRACKING_COMPLETE_CALLED};
+pub use request::IoRequest;
+pub use wdk_safe_macros::define_ioctl;

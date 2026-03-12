@@ -33,7 +33,8 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[repr(u32)]
 pub enum TransferMethod {
-    /// `METHOD_BUFFERED` — kernel copies buffers via `AssociatedIrp.SystemBuffer`.
+    /// `METHOD_BUFFERED` — kernel copies buffers via
+    /// `AssociatedIrp.SystemBuffer`.
     ///
     /// Input and output share one allocation. Output is copied back after the
     /// IRP completes. Simple and safe; use for small transfers.
@@ -65,7 +66,8 @@ pub enum RequiredAccess {
     Read = 1,
     /// `FILE_WRITE_DATA` — caller must have opened the file for writing.
     Write = 2,
-    /// `FILE_READ_DATA | FILE_WRITE_DATA` — read and write access both required.
+    /// `FILE_READ_DATA | FILE_WRITE_DATA` — read and write access both
+    /// required.
     ReadWrite = 3,
 }
 
@@ -209,7 +211,8 @@ impl core::fmt::Display for IoControlCode {
     }
 }
 
-// ── IoStackOffsets ────────────────────────────────────────────────────────────
+// ── IoStackOffsets
+// ────────────────────────────────────────────────────────────
 
 /// Byte offsets of `IO_STACK_LOCATION` fields for a specific WDK version.
 ///
@@ -220,8 +223,9 @@ impl core::fmt::Display for IoControlCode {
 ///
 /// # Usage
 ///
-/// Pass an `IoStackOffsets` constant to [`IoRequest`](crate::request::IoRequest)
-/// methods that read from the stack location, e.g.:
+/// Pass an `IoStackOffsets` constant to
+/// [`IoRequest`](crate::request::IoRequest) methods that read from the stack
+/// location, e.g.:
 ///
 /// ```rust,ignore
 /// use wdk_safe::ioctl::IoStackOffsets;

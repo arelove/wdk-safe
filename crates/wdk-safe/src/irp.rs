@@ -9,11 +9,11 @@
 //! exactly one of:
 //!
 //! 1. **Complete** — call [`Irp::complete`], which calls `C::complete`
-//!    (`IoCompleteRequest`) and consumes `self`. The I/O manager then owns
-//!    the IRP.
+//!    (`IoCompleteRequest`) and consumes `self`. The I/O manager then owns the
+//!    IRP.
 //! 2. **Forward** — call [`Irp::into_raw`], extract the pointer, call
-//!    `IoSkipCurrentIrpStackLocation` + `IoCallDriver`. Ownership transfers
-//!    to the lower driver.
+//!    `IoSkipCurrentIrpStackLocation` + `IoCallDriver`. Ownership transfers to
+//!    the lower driver.
 //!
 //! Forgetting to do either is a debug-build assertion failure (drop bomb).
 //! Doing both is a compile error (use of moved value).
@@ -68,7 +68,8 @@ pub struct RawIrp(pub *mut core::ffi::c_void);
 // SAFETY: See module-level comment — the driver must uphold IRQL invariants.
 unsafe impl Send for RawIrp {}
 
-// ── IrpCompleter ──────────────────────────────────────────────────────────────
+// ── IrpCompleter
+// ──────────────────────────────────────────────────────────────
 
 /// Abstracts the `IoCompleteRequest` / `IofCompleteRequest` kernel function.
 ///
@@ -112,7 +113,8 @@ pub trait IrpCompleter {
     unsafe fn complete(irp: *mut core::ffi::c_void, status: i32);
 }
 
-// ── NoopCompleter ─────────────────────────────────────────────────────────────
+// ── NoopCompleter
+// ─────────────────────────────────────────────────────────────
 
 /// A no-op [`IrpCompleter`] for host-side unit tests.
 ///
@@ -127,7 +129,8 @@ impl IrpCompleter for NoopCompleter {
     }
 }
 
-// ── TrackingCompleter ─────────────────────────────────────────────────────────
+// ── TrackingCompleter
+// ─────────────────────────────────────────────────────────
 
 /// An [`IrpCompleter`] that records whether `complete` was called.
 ///
@@ -137,8 +140,12 @@ impl IrpCompleter for NoopCompleter {
 /// # Usage
 ///
 /// ```rust
-/// use wdk_safe::{irp::{TrackingCompleter, TRACKING_COMPLETE_CALLED}, Irp, NtStatus};
 /// use std::sync::atomic::Ordering;
+///
+/// use wdk_safe::{
+///     irp::{TrackingCompleter, TRACKING_COMPLETE_CALLED},
+///     Irp, NtStatus,
+/// };
 ///
 /// TRACKING_COMPLETE_CALLED.store(false, Ordering::SeqCst);
 ///

@@ -39,7 +39,7 @@
 //! # Example
 //!
 //! ```rust
-//! use wdk_safe::{irp::NoopCompleter, Device, IoRequest, WdmDriver, NtStatus};
+//! use wdk_safe::{irp::NoopCompleter, Device, IoRequest, NtStatus, WdmDriver};
 //!
 //! struct MyDriver;
 //!
@@ -168,7 +168,8 @@ pub trait WdmDriver<C: IrpCompleter> {
     ///
     /// May be called at `IRQL == PASSIVE_LEVEL` or `IRQL == DISPATCH_LEVEL`
     /// depending on the power IRP type. A driver that passes power IRPs
-    /// through must call `PoStartNextPowerIrp` + `IoSkipCurrentIrpStackLocation`
+    /// through must call `PoStartNextPowerIrp` +
+    /// `IoSkipCurrentIrpStackLocation`
     /// + `PoCallDriver` rather than simply completing the IRP.
     ///
     /// # Default

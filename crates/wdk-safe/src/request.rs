@@ -157,11 +157,12 @@ impl<C: IrpCompleter> IoRequest<'_, C> {
     /// # Safety
     ///
     /// - Only call this for `METHOD_BUFFERED` requests
-    ///   (`request.ioctl_code(...).map(|c| c.method()) == Some(TransferMethod::Buffered)`).
+    ///   (`request.ioctl_code(...).map(|c| c.method()) ==
+    ///   Some(TransferMethod::Buffered)`).
     /// - `offsets.irp_system_buffer` must be the correct offset of
     ///   `AssociatedIrp.SystemBuffer` in the running WDK layout.
-    /// - The returned pointer is valid for the duration of the IRP.
-    ///   Do **not** store it past IRP completion.
+    /// - The returned pointer is valid for the duration of the IRP. Do **not**
+    ///   store it past IRP completion.
     ///
     /// # IRQL
     ///
@@ -194,8 +195,8 @@ impl<C: IrpCompleter> IoRequest<'_, C> {
     ///
     /// - `offsets.irp_information` must be the correct byte offset of
     ///   `IoStatus.Information` in the running WDK layout.
-    /// - The returned pointer is valid only while this `IoRequest` is alive.
-    ///   Do not store it past completion.
+    /// - The returned pointer is valid only while this `IoRequest` is alive. Do
+    ///   not store it past completion.
     ///
     /// # IRQL
     ///

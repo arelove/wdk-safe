@@ -16,7 +16,8 @@ use syn::{
     parse_macro_input, Expr, Ident, LitStr, Token, Type,
 };
 
-// ── DefineIoctlArgs parser ────────────────────────────────────────────────────
+// ── DefineIoctlArgs parser
+// ────────────────────────────────────────────────────
 
 /// Parsed arguments for `define_ioctl!(...)`.
 ///
@@ -103,7 +104,8 @@ impl Parse for DefineIoctlArgs {
     }
 }
 
-// ── define_ioctl! ─────────────────────────────────────────────────────────────
+// ── define_ioctl!
+// ─────────────────────────────────────────────────────────────
 
 /// Declares a type-safe IOCTL constant with associated input/output types.
 ///
@@ -216,7 +218,8 @@ pub fn define_ioctl(input: TokenStream) -> TokenStream {
     .into()
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Helpers
+// ───────────────────────────────────────────────────────────────────
 
 fn resolve_method(ident: Option<&Ident>) -> syn::Result<proc_macro2::TokenStream> {
     Ok(match ident.map(|id| id.to_string()).as_deref() {
@@ -256,7 +259,8 @@ fn resolve_access(ident: Option<&Ident>) -> syn::Result<proc_macro2::TokenStream
     })
 }
 
-/// Converts `IOCTL_MY_REQUEST` → (`IoctlMyRequestInput`, `IoctlMyRequestOutput`).
+/// Converts `IOCTL_MY_REQUEST` → (`IoctlMyRequestInput`,
+/// `IoctlMyRequestOutput`).
 fn derive_alias_names(const_name: &Ident) -> (Ident, Ident) {
     let pascal: String = const_name
         .to_string()
