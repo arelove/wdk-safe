@@ -276,4 +276,4 @@ Licensed under either of:
 - Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
 - MIT license ([LICENSE-MIT](LICENSE-MIT))
 
-Copyright (c) 2025 arelove
+Copyright (c) 2026 arelove

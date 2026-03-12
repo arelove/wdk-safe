@@ -1,4 +1,4 @@
-// Copyright (c) 2025 arelove
+// Copyright (c) 2026 arelove
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 //! Integration tests for the `define_ioctl!` proc-macro.
