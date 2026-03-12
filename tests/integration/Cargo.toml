@@ -3,9 +3,6 @@ name    = "integration"
 version = "0.1.0"
 edition = "2021"
 
-# NOTE: this crate is NOT part of the root workspace on purpose —
-# it can reference wdk-safe via path without pulling in WDK deps.
-
-[dev-dependencies]
-wdk-safe        = { path = "../../crates/wdk-safe" }
+[dependencies]
+wdk-safe        = { path = "../../crates/wdk-safe", features = ["test-utils"] }
 wdk-safe-macros = { path = "../../crates/wdk-safe-macros" }

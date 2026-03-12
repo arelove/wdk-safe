@@ -1,3 +1,30 @@
+; hid_filter.inx — WDM upper filter for HID keyboard
+;
+; ── Hardware ID targeting ─────────────────────────────────────────────────────
+;
+;   This INF targets the VirtualBox USB HID keyboard:
+;     HID\VID_80EE&PID_0021  (VirtualBox VID=80EE, keyboard PID=0021)
+;
+;   To find the HW ID of a different keyboard in Device Manager:
+;     Device Manager → Keyboards → <device> → Properties
+;       → Details → Hardware Ids
+;
+; ── Filter registration ───────────────────────────────────────────────────────
+;
+;   This driver registers itself as an UpperFilter on the matched HID device.
+;   It does NOT replace the existing HID class driver — it runs above it.
+;   The keyboard continues to function normally; the filter just intercepts
+;   IRP_MJ_READ and logs keystrokes via DbgPrint.
+;
+; ── Install instructions (in VM, test-signing mode required) ─────────────────
+;
+;   bcdedit /set testsigning on   (then reboot)
+;   pnputil /add-driver hid_filter.inf /install
+;   # Reconnect / re-enumerate the keyboard (unplug+replug USB or reboot)
+;   # Open DebugView (SysInternals) or connect WinDbg over network.
+;   # Type a key — you should see "[hid-filter] IRP_MJ_READ -- forwarding"
+;
+
 [Version]
 Signature   = "$WINDOWS NT$"
 Class       = HIDClass
@@ -11,36 +38,65 @@ PnpLockdown = 1
 DefaultDestDir      = 13
 HidFilter_CopyFiles = 13
 
-[Manufacturer]
-%ManufacturerName% = Standard, NT$ARCH$.10.0...16299
+; ── Manufacturer / Models ─────────────────────────────────────────────────────
+;
+; NTamd64.10.0...16299 means:
+;   - x64 only (NTamd64)
+;   - Windows 10 build 16299 (Fall Creators Update) and later
+;
+; If you need ARM64 support add a second NTarm64.10.0...16299 section.
 
-[Standard.NT$ARCH$.10.0...16299]
-%DeviceDesc% = HidFilter_Install, HID\VID_045E&PID_0750
+[Manufacturer]
+%ManufacturerName% = Standard, NTamd64.10.0...16299
+
+[Standard.NTamd64.10.0...16299]
+; VirtualBox USB HID keyboard — matches the virtual keyboard in VirtualBox VMs.
+; Replace this HW ID with the one from Device Manager if using real hardware.
+%DeviceDesc% = HidFilter_Install, HID\VID_80EE&PID_0021
 
 ; ── Install section ───────────────────────────────────────────────────────────
-; НЕТ суффикса .NT$ARCH$ здесь — infverif ищет именно "HidFilter_Install"
-; (то имя, что указано в [Standard.*] справа от =)
+;
+; The section name here must exactly match what appears in [Standard.*] above.
+; infverif requires NO .NT$ARCH$ suffix on the install section itself —
+; the architecture decoration belongs only on the Models section above.
 
-[HidFilter_Install]
+[HidFilter_Install.NTamd64]
 CopyFiles = HidFilter_CopyFiles
 
 [HidFilter_CopyFiles]
 hid_filter.sys
 
-[HidFilter_Install.HW]
+; ── Hardware key registry entries ────────────────────────────────────────────
+;
+; HKR = the device's hardware key in:
+;   HKLM\SYSTEM\CurrentControlSet\Enum\HID\VID_...&PID_...\...
+;
+; UpperFilters with 0x00010008 (REG_MULTI_SZ | APPEND):
+;   Appends "hid-filter" to the existing UpperFilters list rather than
+;   replacing it. This means other filters (if any) are preserved.
+
+[HidFilter_Install.NTamd64.HW]
 AddReg = HidFilter_AddReg
 
 [HidFilter_AddReg]
 HKR,,"UpperFilters",0x00010008,"hid-filter"
 
-[HidFilter_Install.Services]
+; ── Service installation ──────────────────────────────────────────────────────
+;
+; For a pure upper filter driver:
+;   - Omit SPSVCINST_ASSOCSERVICE (0x00000002) — that flag marks the service
+;     as the *primary* function driver, which this filter is not.
+;   - Use 0x00000000 so Windows registers the service without claiming
+;     primary ownership of the device.
+
+[HidFilter_Install.NTamd64.Services]
 AddService = hid-filter, 0x00000002, HidFilter_Service
 
 [HidFilter_Service]
 DisplayName    = %ServiceDesc%
-ServiceType    = 1
-StartType      = 3
-ErrorControl   = 1
+ServiceType    = 1                  ; SERVICE_KERNEL_DRIVER
+StartType      = 3                  ; SERVICE_DEMAND_START (managed by PnP)
+ErrorControl   = 1                  ; SERVICE_ERROR_NORMAL
 ServiceBinary  = %13%\hid_filter.sys
 
 [SourceDisksNames]
@@ -48,6 +104,8 @@ ServiceBinary  = %13%\hid_filter.sys
 
 [SourceDisksFiles]
 hid_filter.sys = 1
+
+; ── String table ──────────────────────────────────────────────────────────────
 
 [Strings]
 ManufacturerName = "arelove"

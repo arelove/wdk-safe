@@ -1,0 +1,67 @@
+; ioctl_echo.inx — WDM IOCTL echo driver (software-only)
+;
+; ── What this installs ────────────────────────────────────────────────────────
+;
+;   A software-only kernel driver exposing one IOCTL (IOCTL_ECHO).
+;   Send a u32, receive the same u32 back.
+;
+;   After loading:
+;     \Device\WdkSafeEcho    — kernel-mode path
+;     \\.\WdkSafeEcho        — user-mode path
+;
+; ── Install instructions (in VM, test-signing mode required) ─────────────────
+;
+;   bcdedit /set testsigning on    (reboot if not already set)
+;   pnputil /add-driver ioctl_echo.inf /install
+;   sc create ioctl-echo type= kernel binPath= "C:\Windows\System32\drivers\ioctl_echo.sys"
+;   sc start ioctl-echo
+;   # Use the test tool: ioctl_echo_test.exe
+;   sc stop ioctl-echo
+;
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = System
+ClassGuid   = {4d36e97d-e325-11ce-bfc1-08002be10318}
+Provider    = %ManufacturerName%
+DriverVer   =
+CatalogFile = ioctl_echo.cat
+PnpLockdown = 1
+
+[DestinationDirs]
+DefaultDestDir       = 12
+IoctlEcho_CopyFiles  = 13
+
+[Manufacturer]
+%ManufacturerName% = Standard, NTamd64.10.0...16299
+
+[Standard.NTamd64.10.0...16299]
+%DeviceDesc% = IoctlEcho_Install, ROOT\WdkSafeEcho
+
+[IoctlEcho_Install.NTamd64]
+CopyFiles = IoctlEcho_CopyFiles
+
+[IoctlEcho_CopyFiles]
+ioctl_echo.sys
+
+[IoctlEcho_Install.NTamd64.Services]
+AddService = ioctl-echo, 0x00000002, IoctlEcho_Service
+
+[IoctlEcho_Service]
+DisplayName    = %ServiceDesc%
+ServiceType    = 1
+StartType      = 3
+ErrorControl   = 1
+ServiceBinary  = %13%\ioctl_echo.sys
+
+[SourceDisksNames]
+1 = %DiskName%
+
+[SourceDisksFiles]
+ioctl_echo.sys = 1
+
+[Strings]
+ManufacturerName = "arelove"
+DeviceDesc       = "WDK-Safe IOCTL Echo (wdk-safe demo)"
+ServiceDesc      = "WDK-Safe IOCTL Echo Driver"
+DiskName         = "IOCTL Echo Installation Disk"

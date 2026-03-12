@@ -1,10 +1,10 @@
 # Copyright (c) 2025 arelove
-
 # SPDX-License-Identifier: MIT OR Apache-2.0
+
 [package]
-name        = "hid-filter"
+name        = "ioctl-echo"
 version     = "0.1.0"
-description = "HID keyboard filter driver — demonstrates wdk-safe safe abstractions"
+description = "IOCTL echo driver — demonstrates define_ioctl! and system_buffer with wdk-safe"
 edition.workspace      = true
 license.workspace      = true
 repository.workspace   = true
@@ -15,6 +15,7 @@ rust-version.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
+wdk       = { workspace = true }
 wdk-alloc = { workspace = true }
 wdk-panic = { workspace = true }
 wdk-sys   = { workspace = true }
@@ -30,11 +31,9 @@ panic = "abort"
 [profile.release]
 panic = "abort"
 
-# WDK metadata — tells cargo-make this is a KMDF driver.
+# WDK metadata — WDM driver (no KMDF version fields needed).
 [package.metadata.wdk.driver-model]
 driver-type = "WDM"
-kmdf-version-major  = 1
-target-kmdf-version-minor = 33
 
 [lints]
 workspace = true

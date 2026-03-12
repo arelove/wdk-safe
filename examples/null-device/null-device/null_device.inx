@@ -1,0 +1,70 @@
+; null_device.inx — WDM null device driver (software-only, no hardware)
+;
+; ── What this installs ────────────────────────────────────────────────────────
+;
+;   A software-only kernel driver. No hardware matching is needed —
+;   the driver is started manually with `sc start null-device` after
+;   `pnputil /add-driver` registers it.
+;
+;   After loading:
+;     \Device\WdkSafeNull    — kernel-mode path
+;     \\.\WdkSafeNull        — user-mode path (via DosDevices symlink)
+;
+; ── Install instructions (in VM, test-signing mode required) ─────────────────
+;
+;   bcdedit /set testsigning on    (reboot required)
+;   pnputil /add-driver null_device.inf /install
+;   sc create null-device type= kernel binPath= "C:\Windows\System32\drivers\null_device.sys"
+;   sc start null-device
+;   # Observe in DebugView: "[null-device] DriverEntry -- ready"
+;   echo hello > \\.\WdkSafeNull   # write discarded silently
+;   sc stop null-device
+;
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = System
+ClassGuid   = {4d36e97d-e325-11ce-bfc1-08002be10318}
+Provider    = %ManufacturerName%
+DriverVer   =
+CatalogFile = null_device.cat
+PnpLockdown = 1
+
+[DestinationDirs]
+DefaultDestDir       = 12            ; %SystemRoot%\System32\drivers
+NullDevice_CopyFiles = 13
+
+[Manufacturer]
+%ManufacturerName% = Standard, NTamd64.10.0...16299
+
+; Software-only device: use a root-enumerated device ID.
+[Standard.NTamd64.10.0...16299]
+%DeviceDesc% = NullDevice_Install, ROOT\WdkSafeNull
+
+[NullDevice_Install.NTamd64]
+CopyFiles = NullDevice_CopyFiles
+
+[NullDevice_CopyFiles]
+null_device.sys
+
+[NullDevice_Install.NTamd64.Services]
+AddService = null-device, 0x00000002, NullDevice_Service
+
+[NullDevice_Service]
+DisplayName    = %ServiceDesc%
+ServiceType    = 1                  ; SERVICE_KERNEL_DRIVER
+StartType      = 3                  ; SERVICE_DEMAND_START
+ErrorControl   = 1                  ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %13%\null_device.sys
+
+[SourceDisksNames]
+1 = %DiskName%
+
+[SourceDisksFiles]
+null_device.sys = 1
+
+[Strings]
+ManufacturerName = "arelove"
+DeviceDesc       = "WDK-Safe Null Device (wdk-safe demo)"
+ServiceDesc      = "WDK-Safe Null Device Driver"
+DiskName         = "Null Device Installation Disk"

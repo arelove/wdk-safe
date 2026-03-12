@@ -3,6 +3,14 @@
 version = 3
 
 [[package]]
+name = "integration"
+version = "0.1.0"
+dependencies = [
+ "wdk-safe",
+ "wdk-safe-macros",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.106"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -39,14 +47,14 @@ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 
 [[package]]
 name = "wdk-safe"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "wdk-safe-macros",
 ]
 
 [[package]]
 name = "wdk-safe-macros"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "proc-macro2",
  "quote",

@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT OR Apache-2.0
 # Copyright (c) 2025 arelove
+# SPDX-License-Identifier: MIT OR Apache-2.0
 
 # NOTE: This example lives in its own workspace because WDK supports only
 # one driver configuration per Cargo workspace — the same pattern used in
@@ -7,7 +7,7 @@
 
 [workspace]
 resolver = "2"
-members = ["hid-filter/hid-filter"]
+members  = ["ioctl-echo"]
 
 [workspace.package]
 authors      = ["arelove"]
@@ -17,7 +17,7 @@ repository   = "https://github.com/arelove/wdk-safe"
 rust-version = "1.78.0"
 
 [workspace.dependencies]
-wdk-safe  = { path = "../crates/wdk-safe" }
+wdk-safe  = { path = "../../crates/wdk-safe" }
 wdk       = "0.4.1"
 wdk-alloc = "0.4.1"
 wdk-build = "0.5.1"
@@ -31,3 +31,5 @@ unsafe_op_in_unsafe_fn = "warn"
 [workspace.lints.clippy]
 all      = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
+float_arithmetic    = "deny"
+std_instead_of_core = "warn"

@@ -262,18 +262,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
-name = "hid-filter"
-version = "0.1.0"
-dependencies = [
- "wdk",
- "wdk-alloc",
- "wdk-build",
- "wdk-panic",
- "wdk-safe",
- "wdk-sys",
-]
-
-[[package]]
 name = "is_terminal_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -366,6 +354,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "null-device"
+version = "0.1.0"
+dependencies = [
+ "wdk",
+ "wdk-alloc",
+ "wdk-build",
+ "wdk-panic",
+ "wdk-safe",
+ "wdk-sys",
 ]
 
 [[package]]
@@ -753,14 +753,14 @@ checksum = "e594cced255434b29bfca586a74653985281377ff4e36b8cfa58fd4c4c63073a"
 
 [[package]]
 name = "wdk-safe"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "wdk-safe-macros",
 ]
 
 [[package]]
 name = "wdk-safe-macros"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "proc-macro2",
  "quote",

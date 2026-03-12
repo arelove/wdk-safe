@@ -1,13 +1,13 @@
 # Copyright (c) 2025 arelove
-
 # SPDX-License-Identifier: MIT OR Apache-2.0
+
 [package]
-name        = "wdk-safe"
-version     = "0.1.0"
-description = "Safe, idiomatic Rust abstractions for Windows kernel-mode driver development"
+name         = "wdk-safe"
+version      = "0.2.0"
+description  = "Safe, idiomatic Rust abstractions for Windows kernel-mode driver development"
 categories   = ["no-std", "os::windows-apis"]
 edition.workspace      = true
-keywords     = ["driver", "kernel", "kmdf", "wdk", "windows"]
+keywords     = ["driver", "kernel", "wdm", "wdk", "windows"]
 license.workspace      = true
 repository.workspace   = true
 rust-version.workspace = true
@@ -16,8 +16,12 @@ rust-version.workspace = true
 crate-type = ["rlib"]
 
 [dependencies]
-# proc-macro crate — no kernel types, always works on host
 wdk-safe-macros = { workspace = true }
+
+[features]
+# Expose test utilities (TrackingCompleter, etc.) for use in driver crates' own
+# test suites. Not enabled by default to keep the kernel binary lean.
+test-utils = []
 
 [lints]
 workspace = true

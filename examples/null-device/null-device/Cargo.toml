@@ -1,20 +1,17 @@
-# Copyright (c) 2025 arelove
-
-# SPDX-License-Identifier: MIT OR Apache-2.0
 [package]
-name        = "hid-filter"
+name        = "null-device"
 version     = "0.1.0"
-description = "HID keyboard filter driver — demonstrates wdk-safe safe abstractions"
+description = "Null device driver — demonstrates full WDM lifecycle with wdk-safe"
 edition.workspace      = true
 license.workspace      = true
 repository.workspace   = true
 rust-version.workspace = true
 
-# A kernel-mode driver is a cdylib: the linker produces a .sys file.
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
+wdk       = { workspace = true }
 wdk-alloc = { workspace = true }
 wdk-panic = { workspace = true }
 wdk-sys   = { workspace = true }
@@ -23,18 +20,15 @@ wdk-safe  = { workspace = true }
 [build-dependencies]
 wdk-build = { workspace = true }
 
-# Kernel-mode: panic must abort (no stack unwinding in ring 0).
 [profile.dev]
 panic = "abort"
 
 [profile.release]
 panic = "abort"
 
-# WDK metadata — tells cargo-make this is a KMDF driver.
+# WDK metadata — WDM driver (не KMDF, нет kmdf-version полей)
 [package.metadata.wdk.driver-model]
 driver-type = "WDM"
-kmdf-version-major  = 1
-target-kmdf-version-minor = 33
 
 [lints]
 workspace = true

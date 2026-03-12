@@ -1,9 +1,9 @@
 # Copyright (c) 2025 arelove
-
 # SPDX-License-Identifier: MIT OR Apache-2.0
+
 [package]
 name        = "wdk-safe-macros"
-version     = "0.1.0"
+version     = "0.2.0"
 description = "Procedural macros for wdk-safe: type-safe IOCTL code generation"
 edition     = "2021"
 license     = "MIT OR Apache-2.0"

@@ -1,119 +1,98 @@
-# Migration Guide: Phase 1 → Phase 2
+# Migration Guide
 
-`wdk-safe` 0.2 introduces a type parameter on `Irp`, `IoRequest`, and
-`KmdfDriver` to make the `IoCompleteRequest` call injectable at compile
-time. This allows the crate to remain dependency-free on `wdk-sys` while
-driver crates provide the real kernel function at link time.
+## 0.1 → 0.2
 
----
-
-## What changed
-
-### `Irp<C>` and `IoRequest<C: IrpCompleter>`
-
-Both types now carry a `C: IrpCompleter` type parameter.
-
-**Before (0.1)**
-```rust
-pub struct Irp<'irp> { /* ... */ }
-pub struct IoRequest<'irp> { /* ... */ }
-```
-
-**After (0.2)**
-```rust
-pub struct Irp<C: IrpCompleter> { /* ... */ }
-pub struct IoRequest<C: IrpCompleter> { /* ... */ }
-```
-
-### `KmdfDriver<C: IrpCompleter>`
-
-The trait is now generic. All methods change their `IoRequest` parameter.
-
-**Before**
-```rust
-impl KmdfDriver for MyDriver {
-    fn on_create(_device: &Device, request: IoRequest<'_>) -> NtStatus { ... }
-}
-```
-
-**After**
-```rust
-impl KmdfDriver<KernelCompleter> for MyDriver {
-    fn on_create(_device: &Device, request: IoRequest<'_, KernelCompleter>) -> NtStatus { ... }
-}
-```
-
-### `Irp::into_raw` (renamed from nothing)
-
-The old `IoRequest::into_raw_irp` still exists. The inner `Irp` also now
-exposes `into_raw` (replacing the private `as_raw_ptr`).
+Version 0.2 introduces two breaking changes and one rename.
 
 ---
 
-## Migration steps
+### 1. `KmdfDriver` renamed to `WdmDriver`
 
-### 1. Implement `IrpCompleter` in your driver crate
+The trait is now named `WdmDriver` because it operates at the WDM dispatch
+level (raw `DEVICE_OBJECT` / `IRP` pointers), not the KMDF framework level
+(`WDFDEVICE` / `WDFREQUEST`).
 
 ```rust
-// In your driver crate (links wdk-sys):
-use wdk_safe::IrpCompleter;
+// Before (0.1):
+impl KmdfDriver<KernelCompleter> for MyDriver { ... }
 
-pub struct KernelCompleter;
-
-impl IrpCompleter for KernelCompleter {
-    unsafe fn complete(irp: *mut core::ffi::c_void, status: i32) {
-        unsafe {
-            let pirp = irp.cast::<wdk_sys::IRP>();
-            (*pirp).IoStatus.__bindgen_anon_1.Status = status;
-            wdk_sys::ntddk::IoCompleteRequest(pirp, wdk_sys::IO_NO_INCREMENT as i8);
-        }
-    }
-}
+// After (0.2):
+impl WdmDriver<KernelCompleter> for MyDriver { ... }
 ```
 
-### 2. Update `KmdfDriver` impl
+The re-export `wdk_safe::KmdfDriver` has been removed. Update all imports
+and impl blocks.
 
-Replace `KmdfDriver` with `KmdfDriver<KernelCompleter>` and update every
-method signature:
+---
+
+### 2. `IoRequest` buffer/IOCTL accessors now take `&IoStackOffsets`
+
+The raw offset parameters have been replaced with a typed `IoStackOffsets`
+struct to eliminate magic numbers.
 
 ```rust
-// Before:
-impl KmdfDriver for MyDriver {
-    fn on_read(_dev: &Device, req: IoRequest<'_>) -> NtStatus { ... }
-}
+// Before (0.1):
+let code = request.ioctl_code_at_offset(0x18);
+let in_len = request.input_buffer_length_at_offset(0x10);
 
-// After:
-impl KmdfDriver<KernelCompleter> for MyDriver {
-    fn on_read(_dev: &Device, req: IoRequest<'_, KernelCompleter>) -> NtStatus { ... }
-}
+// After (0.2):
+use wdk_safe::ioctl::IoStackOffsets;
+
+let code = request.ioctl_code(&IoStackOffsets::WDK_SYS_0_5_X64);
+let in_len = request.input_buffer_length(&IoStackOffsets::WDK_SYS_0_5_X64);
 ```
 
-### 3. Update dispatch thunks
+For driver crates targeting a different WDK version, define your own constant:
 
 ```rust
-// Before:
-unsafe { IoRequest::from_raw(irp.cast(), stack.cast()) }
+use wdk_safe::ioctl::IoStackOffsets;
 
-// After (only the type annotation changes — the call is identical):
-unsafe { IoRequest::<KernelCompleter>::from_raw(irp.cast(), stack.cast()) }
-```
-
-### 4. Update unit tests
-
-In tests, replace all `IoRequest<'_>` with `IoRequest<NoopCompleter>`:
-
-```rust
-use wdk_safe::NoopCompleter;
-
-let req = unsafe { IoRequest::<NoopCompleter>::from_raw(ptr, stack) };
+// Offsets verified for your WDK version / architecture:
+const MY_OFFSETS: IoStackOffsets = IoStackOffsets {
+    ioctl_code: 0x18,
+    input_buffer_length: 0x10,
+    output_buffer_length: 0x08,
+    irp_system_buffer: 0x70,
+    irp_information: 0x38,
+};
 ```
 
 ---
 
-## Zero runtime cost
+### 3. `complete_with_information` renamed to `complete_with_info`
 
-`IrpCompleter` is a trait with a single static dispatch method. The
-compiler monomorphises `Irp<KernelCompleter>` to a struct that calls
-`IoCompleteRequest` directly — identical codegen to the old hardcoded call.
-`KernelCompleter` is a zero-sized type; `Irp<KernelCompleter>` is the same
-size as `Irp` was before.
+```rust
+// Before (0.1):
+request.complete_with_information(status, bytes, info_ptr)
+
+// After (0.2):
+unsafe { request.complete_with_info(status, bytes, info_ptr) }
+```
+
+The method is now `unsafe` because the caller must supply a valid pointer to
+`IoStatus.Information` inside the IRP.
+
+---
+
+### 4. `dispatch_fn!` macro moved to `wdk_safe`
+
+The dispatch thunk macro is now in the library instead of being copied into
+each driver. Remove your local macro definition and use the library version:
+
+```rust
+// Before (0.1): you had a local macro_rules! dispatch_thunk!
+// After (0.2):
+wdk_safe::dispatch_fn!(dispatch_read = MyDriver::on_read [KernelCompleter]);
+```
+
+---
+
+### 5. `test-utils` feature for `TrackingCompleter`
+
+`TrackingCompleter` and `TRACKING_COMPLETE_CALLED` are now gated behind the
+`test-utils` feature flag:
+
+```toml
+[dev-dependencies]
+wdk-safe = { ..., features = ["test-utils"] }
+```

@@ -1,16 +1,18 @@
 # Copyright (c) 2025 arelove
-
 # SPDX-License-Identifier: MIT OR Apache-2.0
+
 [workspace]
 resolver = "2"
 members  = [
     "crates/wdk-safe",
     "crates/wdk-safe-macros",
+    "tests/integration",
 ]
 
-# NOTE: examples/ and tests/ are intentionally excluded from this workspace
-# because they require a separate WDK configuration per workspace.
-# See: https://github.com/microsoft/windows-drivers-rs#repo-layout
+# NOTE: examples/ is intentionally excluded from this workspace because WDK
+# supports only one driver configuration per Cargo workspace. Each example
+# lives in its own workspace, matching the pattern used in
+# microsoft/windows-drivers-rs and microsoft/Windows-rust-driver-samples.
 
 [workspace.package]
 authors      = ["arelove"]
@@ -33,11 +35,12 @@ quote       = "1.0"
 syn         = { version = "2.0", features = ["full"] }
 
 # Internal crates
+wdk-safe        = { path = "crates/wdk-safe" }
 wdk-safe-macros = { path = "crates/wdk-safe-macros" }
 
 [workspace.lints.rust]
 missing_docs           = "warn"
-unsafe_op_in_unsafe_fn = "warn"
+unsafe_op_in_unsafe_fn = "deny"
 unused_import_braces   = "warn"
 unused_lifetimes       = "warn"
 unused_qualifications  = "warn"
@@ -47,7 +50,7 @@ all      = { level = "warn", priority = -1 }
 nursery  = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 
-# Kernel-mode safety rules
+# Kernel-mode safety rules — these prevent bugs that are catastrophic in ring 0
 float_arithmetic     = "deny"
 std_instead_of_alloc = "warn"
 std_instead_of_core  = "warn"
