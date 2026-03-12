@@ -222,10 +222,10 @@ impl WdmDriver<KernelCompleter> for HidFilterDriver {
     /// # IRQL
     ///
     /// `PASSIVE_LEVEL`.
-    fn on_create(_device: &Device<'_>, request: IoRequest<'_, KernelCompleter>) -> NtStatus {
-        // SAFETY: DbgPrint is safe at PASSIVE_LEVEL.
+    fn on_create(device: &Device<'_>, request: IoRequest<'_, KernelCompleter>) -> NtStatus {
         unsafe { DbgPrint(b"[hid-filter] IRP_MJ_CREATE\n\0".as_ptr().cast()) };
-        request.complete(NtStatus::SUCCESS)
+        let lower = get_lower_device(device);
+        unsafe { forward_irp(request, lower) }
     }
 
     /// `IRP_MJ_CLOSE` — the last handle to the keyboard device was closed.
@@ -233,10 +233,20 @@ impl WdmDriver<KernelCompleter> for HidFilterDriver {
     /// # IRQL
     ///
     /// `PASSIVE_LEVEL`.
-    fn on_close(_device: &Device<'_>, request: IoRequest<'_, KernelCompleter>) -> NtStatus {
-        // SAFETY: DbgPrint is safe at PASSIVE_LEVEL.
+    fn on_close(device: &Device<'_>, request: IoRequest<'_, KernelCompleter>) -> NtStatus {
         unsafe { DbgPrint(b"[hid-filter] IRP_MJ_CLOSE\n\0".as_ptr().cast()) };
-        request.complete(NtStatus::SUCCESS)
+        let lower = get_lower_device(device);
+        unsafe { forward_irp(request, lower) }
+    }
+
+    fn on_internal_device_control(device: &Device<'_>, request: IoRequest<'_, KernelCompleter>) -> NtStatus {
+        let lower = get_lower_device(device);
+        unsafe { forward_irp(request, lower) }
+    }
+
+    fn on_cleanup(device: &Device<'_>, request: IoRequest<'_, KernelCompleter>) -> NtStatus {
+        let lower = get_lower_device(device);
+        unsafe { forward_irp(request, lower) }
     }
 
     /// `IRP_MJ_READ` — a keystroke is arriving from hardware.
@@ -361,6 +371,11 @@ wdk_safe::dispatch_fn!(
 );
 wdk_safe::dispatch_fn!(
     dispatch_pnp = HidFilterDriver, on_pnp, KernelCompleter,
+    irp_stack = irp_current_stack
+);
+
+wdk_safe::dispatch_fn!(
+    dispatch_passthrough = HidFilterDriver, on_pnp, KernelCompleter,
     irp_stack = irp_current_stack
 );
 
@@ -536,14 +551,20 @@ unsafe fn driver_entry_inner(
     // register dispatch routines.
     unsafe {
         let obj = &mut *driver;
+        // Заполнить все слоты passthrough-форвардом
+        for i in 0..(wdk_sys::IRP_MJ_MAXIMUM_FUNCTION as usize + 1) {
+            if obj.MajorFunction[i].is_none() {
+                obj.MajorFunction[i] = Some(dispatch_passthrough);
+            }
+        }
         obj.MajorFunction[wdk_sys::IRP_MJ_CREATE as usize] = Some(dispatch_create);
         obj.MajorFunction[wdk_sys::IRP_MJ_CLOSE  as usize] = Some(dispatch_close);
         obj.MajorFunction[wdk_sys::IRP_MJ_READ   as usize] = Some(dispatch_read);
+        obj.MajorFunction[wdk_sys::IRP_MJ_INTERNAL_DEVICE_CONTROL as usize] = Some(dispatch_passthrough);
         obj.MajorFunction[wdk_sys::IRP_MJ_POWER  as usize] = Some(dispatch_power);
         obj.MajorFunction[wdk_sys::IRP_MJ_PNP    as usize] = Some(dispatch_pnp);
         obj.DriverUnload = Some(driver_unload);
     }
-
     // SAFETY: PASSIVE_LEVEL.
     unsafe {
         DbgPrint(b"[hid-filter] DriverEntry -- ready\n\0".as_ptr().cast());

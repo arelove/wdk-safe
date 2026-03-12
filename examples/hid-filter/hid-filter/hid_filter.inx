@@ -62,6 +62,8 @@ HidFilter_CopyFiles = 13
 
 [HidFilter_Install.NTamd64]
 CopyFiles = HidFilter_CopyFiles
+Include   = input.inf
+Needs     = HID_Keyboard_Inst.NT
 
 [HidFilter_CopyFiles]
 hid_filter.sys
@@ -76,7 +78,9 @@ hid_filter.sys
 ;   replacing it. This means other filters (if any) are preserved.
 
 [HidFilter_Install.NTamd64.HW]
-AddReg = HidFilter_AddReg
+AddReg  = HidFilter_AddReg
+Include = input.inf
+Needs   = HID_Keyboard_Inst.NT.HW
 
 [HidFilter_AddReg]
 HKR,,"UpperFilters",0x00010008,"hid-filter"
@@ -90,7 +94,9 @@ HKR,,"UpperFilters",0x00010008,"hid-filter"
 ;     primary ownership of the device.
 
 [HidFilter_Install.NTamd64.Services]
-AddService = hid-filter, 0x00000002, HidFilter_Service
+Include    = input.inf
+Needs      = HID_Keyboard_Inst.NT.Services
+AddService = hid-filter, 0x00000000, HidFilter_Service
 
 [HidFilter_Service]
 DisplayName    = %ServiceDesc%

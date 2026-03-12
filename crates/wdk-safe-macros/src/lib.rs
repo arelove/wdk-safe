@@ -219,45 +219,41 @@ pub fn define_ioctl(input: TokenStream) -> TokenStream {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 fn resolve_method(ident: Option<&Ident>) -> syn::Result<proc_macro2::TokenStream> {
-    Ok(
-        match ident.map(|id| id.to_string()).as_deref() {
-            None | Some("Buffered") => {
-                quote! { ::wdk_safe::ioctl::TransferMethod::Buffered }
-            }
-            Some("InDirect") => quote! { ::wdk_safe::ioctl::TransferMethod::InDirect },
-            Some("OutDirect") => quote! { ::wdk_safe::ioctl::TransferMethod::OutDirect },
-            Some("Neither") => quote! { ::wdk_safe::ioctl::TransferMethod::Neither },
-            Some(other) => {
-                return Err(syn::Error::new(
-                    ident.unwrap().span(),
-                    format!(
-                        "unknown transfer method `{other}`; \
+    Ok(match ident.map(|id| id.to_string()).as_deref() {
+        None | Some("Buffered") => {
+            quote! { ::wdk_safe::ioctl::TransferMethod::Buffered }
+        }
+        Some("InDirect") => quote! { ::wdk_safe::ioctl::TransferMethod::InDirect },
+        Some("OutDirect") => quote! { ::wdk_safe::ioctl::TransferMethod::OutDirect },
+        Some("Neither") => quote! { ::wdk_safe::ioctl::TransferMethod::Neither },
+        Some(other) => {
+            return Err(syn::Error::new(
+                ident.unwrap().span(),
+                format!(
+                    "unknown transfer method `{other}`; \
                          expected one of: Buffered (default), InDirect, OutDirect, Neither"
-                    ),
-                ));
-            }
-        },
-    )
+                ),
+            ));
+        }
+    })
 }
 
 fn resolve_access(ident: Option<&Ident>) -> syn::Result<proc_macro2::TokenStream> {
-    Ok(
-        match ident.map(|id| id.to_string()).as_deref() {
-            None | Some("Any") => quote! { ::wdk_safe::ioctl::RequiredAccess::Any },
-            Some("Read") => quote! { ::wdk_safe::ioctl::RequiredAccess::Read },
-            Some("Write") => quote! { ::wdk_safe::ioctl::RequiredAccess::Write },
-            Some("ReadWrite") => quote! { ::wdk_safe::ioctl::RequiredAccess::ReadWrite },
-            Some(other) => {
-                return Err(syn::Error::new(
-                    ident.unwrap().span(),
-                    format!(
-                        "unknown required access `{other}`; \
+    Ok(match ident.map(|id| id.to_string()).as_deref() {
+        None | Some("Any") => quote! { ::wdk_safe::ioctl::RequiredAccess::Any },
+        Some("Read") => quote! { ::wdk_safe::ioctl::RequiredAccess::Read },
+        Some("Write") => quote! { ::wdk_safe::ioctl::RequiredAccess::Write },
+        Some("ReadWrite") => quote! { ::wdk_safe::ioctl::RequiredAccess::ReadWrite },
+        Some(other) => {
+            return Err(syn::Error::new(
+                ident.unwrap().span(),
+                format!(
+                    "unknown required access `{other}`; \
                          expected one of: Any (default), Read, Write, ReadWrite"
-                    ),
-                ));
-            }
-        },
-    )
+                ),
+            ));
+        }
+    })
 }
 
 /// Converts `IOCTL_MY_REQUEST` → (`IoctlMyRequestInput`, `IoctlMyRequestOutput`).

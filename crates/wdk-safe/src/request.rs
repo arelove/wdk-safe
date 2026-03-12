@@ -106,7 +106,11 @@ impl<C: IrpCompleter> IoRequest<'_, C> {
                 .cast::<u32>()
                 .read_unaligned()
         };
-        if raw == 0 { None } else { Some(IoControlCode::from_raw(raw)) }
+        if raw == 0 {
+            None
+        } else {
+            Some(IoControlCode::from_raw(raw))
+        }
     }
 
     /// Returns the `InputBufferLength` field from the current
@@ -173,7 +177,11 @@ impl<C: IrpCompleter> IoRequest<'_, C> {
                 .cast::<*mut core::ffi::c_void>()
                 .read_unaligned()
         };
-        if ptr.is_null() { None } else { Some(ptr) }
+        if ptr.is_null() {
+            None
+        } else {
+            Some(ptr)
+        }
     }
 
     /// Returns a raw pointer to the `IoStatus.Information` field inside
@@ -331,8 +339,7 @@ mod tests {
     fn stack_with_ioctl(code: u32) -> Vec<u8> {
         let size = OFFSETS.ioctl_code + 4;
         let mut buf = vec![0u8; size];
-        buf[OFFSETS.ioctl_code..OFFSETS.ioctl_code + 4]
-            .copy_from_slice(&code.to_ne_bytes());
+        buf[OFFSETS.ioctl_code..OFFSETS.ioctl_code + 4].copy_from_slice(&code.to_ne_bytes());
         buf
     }
 
@@ -340,9 +347,8 @@ mod tests {
     fn ioctl_code_returns_none_for_zero() {
         #[allow(clippy::useless_vec)]
         let buf = vec![0u8; OFFSETS.ioctl_code + 4];
-        let req = unsafe {
-            IoRequest::<NoopCompleter>::from_raw(1usize as *mut _, buf.as_ptr().cast())
-        };
+        let req =
+            unsafe { IoRequest::<NoopCompleter>::from_raw(1usize as *mut _, buf.as_ptr().cast()) };
         let result = req.ioctl_code(&OFFSETS);
         let _ = req.complete(NtStatus::SUCCESS);
         assert!(result.is_none());
@@ -352,9 +358,8 @@ mod tests {
     fn ioctl_code_returns_code() {
         let expected: u32 = 0x8000_2000;
         let buf = stack_with_ioctl(expected);
-        let req = unsafe {
-            IoRequest::<NoopCompleter>::from_raw(1usize as *mut _, buf.as_ptr().cast())
-        };
+        let req =
+            unsafe { IoRequest::<NoopCompleter>::from_raw(1usize as *mut _, buf.as_ptr().cast()) };
         let result = req.ioctl_code(&OFFSETS);
         let _ = req.complete(NtStatus::SUCCESS);
         assert_eq!(result.unwrap().into_raw(), expected);
@@ -363,16 +368,10 @@ mod tests {
     #[test]
     fn ioctl_code_decodes_correctly() {
         use crate::ioctl::{IoControlCode, RequiredAccess, TransferMethod};
-        let code = IoControlCode::new(
-            0x8000,
-            0x800,
-            TransferMethod::Buffered,
-            RequiredAccess::Any,
-        );
+        let code = IoControlCode::new(0x8000, 0x800, TransferMethod::Buffered, RequiredAccess::Any);
         let buf = stack_with_ioctl(code.into_raw());
-        let req = unsafe {
-            IoRequest::<NoopCompleter>::from_raw(1usize as *mut _, buf.as_ptr().cast())
-        };
+        let req =
+            unsafe { IoRequest::<NoopCompleter>::from_raw(1usize as *mut _, buf.as_ptr().cast()) };
         let result = req.ioctl_code(&OFFSETS);
         let _ = req.complete(NtStatus::SUCCESS);
         let decoded = result.unwrap();
@@ -400,9 +399,8 @@ mod tests {
     #[test]
     fn input_buffer_length_read() {
         let buf = stack_with_lengths(42, 0);
-        let req = unsafe {
-            IoRequest::<NoopCompleter>::from_raw(1usize as *mut _, buf.as_ptr().cast())
-        };
+        let req =
+            unsafe { IoRequest::<NoopCompleter>::from_raw(1usize as *mut _, buf.as_ptr().cast()) };
         let len = req.input_buffer_length(&OFFSETS);
         let _ = req.complete(NtStatus::SUCCESS);
         assert_eq!(len, 42);
@@ -411,9 +409,8 @@ mod tests {
     #[test]
     fn output_buffer_length_read() {
         let buf = stack_with_lengths(0, 99);
-        let req = unsafe {
-            IoRequest::<NoopCompleter>::from_raw(1usize as *mut _, buf.as_ptr().cast())
-        };
+        let req =
+            unsafe { IoRequest::<NoopCompleter>::from_raw(1usize as *mut _, buf.as_ptr().cast()) };
         let len = req.output_buffer_length(&OFFSETS);
         let _ = req.complete(NtStatus::SUCCESS);
         assert_eq!(len, 99);
@@ -422,23 +419,21 @@ mod tests {
     #[test]
     fn both_lengths_read_independently() {
         let buf = stack_with_lengths(512, 1024);
-        let req = unsafe {
-            IoRequest::<NoopCompleter>::from_raw(1usize as *mut _, buf.as_ptr().cast())
-        };
-        let in_l  = req.input_buffer_length(&OFFSETS);
+        let req =
+            unsafe { IoRequest::<NoopCompleter>::from_raw(1usize as *mut _, buf.as_ptr().cast()) };
+        let in_l = req.input_buffer_length(&OFFSETS);
         let out_l = req.output_buffer_length(&OFFSETS);
         let _ = req.complete(NtStatus::SUCCESS);
-        assert_eq!(in_l,  512);
+        assert_eq!(in_l, 512);
         assert_eq!(out_l, 1024);
     }
 
     #[test]
     fn lengths_are_zero_when_not_set() {
         let buf = vec![0u8; 256];
-        let req = unsafe {
-            IoRequest::<NoopCompleter>::from_raw(1usize as *mut _, buf.as_ptr().cast())
-        };
-        assert_eq!(req.input_buffer_length(&OFFSETS),  0);
+        let req =
+            unsafe { IoRequest::<NoopCompleter>::from_raw(1usize as *mut _, buf.as_ptr().cast()) };
+        assert_eq!(req.input_buffer_length(&OFFSETS), 0);
         assert_eq!(req.output_buffer_length(&OFFSETS), 0);
         let _ = req.complete(NtStatus::SUCCESS);
     }
@@ -449,9 +444,8 @@ mod tests {
     fn complete_with_info_writes_bytes() {
         let mut info: usize = 0;
         let req = dummy_request();
-        let _ = unsafe {
-            req.complete_with_info(NtStatus::SUCCESS, 42, core::ptr::addr_of_mut!(info))
-        };
+        let _ =
+            unsafe { req.complete_with_info(NtStatus::SUCCESS, 42, core::ptr::addr_of_mut!(info)) };
         assert_eq!(info, 42);
     }
 
@@ -459,9 +453,8 @@ mod tests {
     fn complete_with_info_zero_bytes() {
         let mut info: usize = 99;
         let req = dummy_request();
-        let _ = unsafe {
-            req.complete_with_info(NtStatus::SUCCESS, 0, core::ptr::addr_of_mut!(info))
-        };
+        let _ =
+            unsafe { req.complete_with_info(NtStatus::SUCCESS, 0, core::ptr::addr_of_mut!(info)) };
         assert_eq!(info, 0);
     }
 

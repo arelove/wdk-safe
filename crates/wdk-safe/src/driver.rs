@@ -287,12 +287,18 @@ mod tests {
 
     #[test]
     fn default_read_is_not_supported() {
-        assert_eq!(DefaultDriver::on_read(&dev(), req()), NtStatus::NOT_SUPPORTED);
+        assert_eq!(
+            DefaultDriver::on_read(&dev(), req()),
+            NtStatus::NOT_SUPPORTED
+        );
     }
 
     #[test]
     fn default_write_is_not_supported() {
-        assert_eq!(DefaultDriver::on_write(&dev(), req()), NtStatus::NOT_SUPPORTED);
+        assert_eq!(
+            DefaultDriver::on_write(&dev(), req()),
+            NtStatus::NOT_SUPPORTED
+        );
     }
 
     #[test]
@@ -313,12 +319,18 @@ mod tests {
 
     #[test]
     fn default_power_is_not_supported() {
-        assert_eq!(DefaultDriver::on_power(&dev(), req()), NtStatus::NOT_SUPPORTED);
+        assert_eq!(
+            DefaultDriver::on_power(&dev(), req()),
+            NtStatus::NOT_SUPPORTED
+        );
     }
 
     #[test]
     fn default_pnp_is_not_supported() {
-        assert_eq!(DefaultDriver::on_pnp(&dev(), req()), NtStatus::NOT_SUPPORTED);
+        assert_eq!(
+            DefaultDriver::on_pnp(&dev(), req()),
+            NtStatus::NOT_SUPPORTED
+        );
     }
 
     #[test]
