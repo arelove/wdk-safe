@@ -1,6 +1,6 @@
-# Форматирование TOML — Microsoft используют taplo
 [formatting]
 column_width = 80
+crlf = false
 indent_string = "    "
 reorder_arrays = true
 reorder_keys = true

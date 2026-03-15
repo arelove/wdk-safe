@@ -101,7 +101,8 @@ unsafe impl Send for RawIrp {}
 /// }
 /// ```
 ///
-/// For host-side unit tests use [`NoopCompleter`] or `TrackingCompleter` (feature `test-utils`).
+/// For host-side unit tests use [`NoopCompleter`] or `TrackingCompleter`
+/// (feature `test-utils`).
 pub trait IrpCompleter {
     /// Completes the IRP by calling `IoCompleteRequest`.
     ///
