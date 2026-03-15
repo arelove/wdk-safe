@@ -62,7 +62,7 @@
 /// - `$vis` — visibility (`pub`, `pub(crate)`, or empty).
 /// - `$fn_name` — the name of the generated function.
 /// - `$DriverType` — a type implementing
-///   [`crate::WdmDriver`]`<$CompleterType>`.
+///   <code>[crate::WdmDriver]<$CompleterType></code>.
 /// - `$method` — the [`crate::WdmDriver`] method to call (e.g. `on_read`).
 /// - `$CompleterType` — the [`IrpCompleter`](crate::IrpCompleter) type.
 /// - `$irp_stack_fn` — a function with signature `unsafe fn(*mut IRP) -> *mut
