@@ -13,7 +13,7 @@
 //!
 //! Writing these by hand for every major function is boilerplate-heavy and
 //! error-prone (easy to forget `IoGetCurrentIrpStackLocation`, easy to use
-//! wrong ABI). The [`dispatch_fn!`] macro generates the boilerplate correctly
+//! wrong ABI). The [`dispatch_fn`] macro generates the boilerplate correctly
 //! and routes to the appropriate [`WdmDriver`](crate::WdmDriver) method.
 //!
 //! # ABI note

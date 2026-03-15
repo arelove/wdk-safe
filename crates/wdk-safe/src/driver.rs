@@ -34,7 +34,7 @@
 //! `STATUS_NOT_SUPPORTED`, which will prevent the system from entering sleep
 //! states and break `PnP` lifecycle management.
 //!
-//! See [`WdmFilterDriver`] for a separate trait with correct filter defaults.
+//! See `WdmFilterDriver` for a separate trait with correct filter defaults.
 //!
 //! # Example
 //!
@@ -72,7 +72,7 @@ use crate::{irp::IrpCompleter, Device, IoRequest, NtStatus};
 /// # Filter drivers
 ///
 /// For filter drivers that need to forward `PnP` and Power IRPs, see
-/// [`WdmFilterDriver`] which provides correct forwarding defaults.
+/// `WdmFilterDriver` which provides correct forwarding defaults.
 pub trait WdmDriver<C: IrpCompleter> {
     /// `IRP_MJ_CREATE` — a user-mode or kernel-mode client opened a handle
     /// to the device.
@@ -178,7 +178,7 @@ pub trait WdmDriver<C: IrpCompleter> {
     /// that is attached to a device stack — failing to pass power IRPs
     /// prevents system sleep/hibernate.
     ///
-    /// For filter drivers, use [`WdmFilterDriver`] which provides the correct
+    /// For filter drivers, use `WdmFilterDriver` which provides the correct
     /// forwarding default.
     #[must_use]
     fn on_power(_device: &Device<'_>, request: IoRequest<'_, C>) -> NtStatus {
@@ -196,7 +196,7 @@ pub trait WdmDriver<C: IrpCompleter> {
     /// Completes with `STATUS_NOT_SUPPORTED`. **Override this** in filter
     /// drivers — `PnP` IRPs must be forwarded down the stack.
     ///
-    /// For filter drivers, use [`WdmFilterDriver`] which provides the correct
+    /// For filter drivers, use `WdmFilterDriver` which provides the correct
     /// forwarding default.
     #[must_use]
     fn on_pnp(_device: &Device<'_>, request: IoRequest<'_, C>) -> NtStatus {

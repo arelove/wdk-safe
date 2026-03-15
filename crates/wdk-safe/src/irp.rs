@@ -101,7 +101,7 @@ unsafe impl Send for RawIrp {}
 /// }
 /// ```
 ///
-/// For host-side unit tests use [`NoopCompleter`] or [`TrackingCompleter`].
+/// For host-side unit tests use [`NoopCompleter`] or `TrackingCompleter` (feature `test-utils`).
 pub trait IrpCompleter {
     /// Completes the IRP by calling `IoCompleteRequest`.
     ///
@@ -163,7 +163,7 @@ impl IrpCompleter for NoopCompleter {
 #[cfg(any(test, feature = "test-utils"))]
 pub struct TrackingCompleter;
 
-/// Shared flag written by [`TrackingCompleter`].
+/// Shared flag written by `TrackingCompleter` (feature `test-utils`).
 ///
 /// Reset to `false` at the start of each test that checks it.
 #[cfg(any(test, feature = "test-utils"))]
@@ -198,7 +198,7 @@ impl IrpCompleter for TrackingCompleter {
 ///
 /// `C: IrpCompleter` is the zero-sized type that calls `IoCompleteRequest`.\
 /// Production: driver-provided `KernelCompleter`.\
-/// Tests: [`NoopCompleter`] or [`TrackingCompleter`].
+/// Tests: [`NoopCompleter`] or `TrackingCompleter` (feature `test-utils`).
 ///
 /// # IRQL constraints
 ///
