@@ -15,7 +15,6 @@ version = "0.1.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-wdk = { workspace = true }
 wdk-alloc = { workspace = true }
 wdk-panic = { workspace = true }
 wdk-safe = { workspace = true }

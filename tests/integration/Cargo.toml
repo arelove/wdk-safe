@@ -7,4 +7,3 @@ version = "0.1.0"
 
 [dependencies]
 wdk-safe = { path = "../../crates/wdk-safe", features = ["test-utils"] }
-wdk-safe-macros = { path = "../../crates/wdk-safe-macros" }
