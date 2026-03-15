@@ -17,7 +17,11 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: crate-ci/typos@v1
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: typos
+      - name: Run typos
+        run: typos
 
   # ── 2. TOML formatting ─────────────────────────────────────────────────────
   taplo:
@@ -25,9 +29,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: uncenter/setup-taplo@v1
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
         with:
-          version: "0.10.0"
+          tool: taplo-cli
       - name: taplo fmt --check
         run: taplo fmt --check
 
@@ -39,7 +44,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
         with:
-          components: rustfmt
+          components: rustfmt, rust-src
       - name: cargo fmt — workspace
         run: cargo fmt --all -- --check
       - name: cargo fmt — null-device
