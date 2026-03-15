@@ -11,7 +11,7 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
-  # ── 1. Typo check ──────────────────────────────────────────────────────────
+  # ── 1. Typos ───────────────────────────────────────────────────────────────
   typos:
     name: Typos
     runs-on: windows-latest
@@ -34,7 +34,7 @@ jobs:
         with:
           tool: taplo-cli
       - name: taplo fmt --check
-        run: taplo fmt --check
+        run: taplo fmt --check --diff
 
   # ── 3. Rust formatting ─────────────────────────────────────────────────────
   fmt:
@@ -57,7 +57,7 @@ jobs:
         run: cargo fmt --all -- --check
         working-directory: examples/hid-filter
 
-  # ── 4. Clippy ──────────────────────────────────────────────────────────────
+  # ── 4. Clippy + unused deps ────────────────────────────────────────────────
   clippy:
     name: Clippy
     runs-on: windows-latest
@@ -72,6 +72,11 @@ jobs:
           shared-key: "wdk-safe-clippy"
       - name: cargo clippy — workspace
         run: cargo clippy --all-targets --all-features -- -D warnings
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-machete
+      - name: cargo machete — unused deps
+        run: cargo machete --skip-target-dir
 
   # ── 5. Tests ───────────────────────────────────────────────────────────────
   test:
@@ -105,3 +110,13 @@ jobs:
         run: cargo doc --no-deps -p wdk-safe
         env:
           RUSTDOCFLAGS: "-D warnings"
+
+  # ── 7. Security audit ──────────────────────────────────────────────────────
+  audit:
+    name: Cargo Audit
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rustsec/audit-check@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
