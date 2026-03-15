@@ -13,7 +13,7 @@
 //!
 //! Writing these by hand for every major function is boilerplate-heavy and
 //! error-prone (easy to forget `IoGetCurrentIrpStackLocation`, easy to use
-//! wrong ABI). The [`dispatch_fn`] macro generates the boilerplate correctly
+//! wrong ABI). The [`crate::dispatch_fn`] macro generates the boilerplate correctly
 //! and routes to the appropriate [`WdmDriver`](crate::WdmDriver) method.
 //!
 //! # ABI note
@@ -45,7 +45,7 @@
 //! ```
 
 /// Generates a `unsafe extern "C" fn(PDEVICE_OBJECT, PIRP) -> NTSTATUS`
-/// dispatch thunk that bridges the raw WDM ABI to a [`WdmDriver`] method.
+/// dispatch thunk that bridges the raw WDM ABI to a [`crate::WdmDriver`] method.
 ///
 /// # Syntax
 ///
@@ -59,8 +59,8 @@
 /// Where:
 /// - `$vis` — visibility (`pub`, `pub(crate)`, or empty).
 /// - `$fn_name` — the name of the generated function.
-/// - `$DriverType` — a type implementing [`WdmDriver<$CompleterType>`].
-/// - `$method` — the [`WdmDriver`] method to call (e.g. `on_read`).
+/// - `$DriverType` — a type implementing [`crate::WdmDriver`]`<$CompleterType>`.
+/// - `$method` — the [`crate::WdmDriver`] method to call (e.g. `on_read`).
 /// - `$CompleterType` — the [`IrpCompleter`](crate::IrpCompleter) type.
 /// - `$irp_stack_fn` — a function with signature `unsafe fn(*mut IRP) -> *mut
 ///   IO_STACK_LOCATION` that implements `IoGetCurrentIrpStackLocation`. This
