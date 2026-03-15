@@ -1,9 +1,6 @@
 [build]
-rustflags = [
-    "-C", "panic=abort",
-    "-C", "target-feature=+crt-static",
-]
+rustflags = ["-C", "-C", "panic=abort", "target-feature=+crt-static"]
 
 [unstable]
-build-std          = ["core"]
+build-std = ["core"]
 build-std-features = []

@@ -47,7 +47,8 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 #![warn(missing_docs)]
 
-// ── Kernel-mode boilerplate ───────────────────────────────────────────────────
+// ── Kernel-mode boilerplate
+// ───────────────────────────────────────────────────
 
 /// Bug-check on panic — the only safe behaviour in kernel mode (no unwinding).
 #[cfg(not(test))]
@@ -61,7 +62,8 @@ use wdk_alloc::WdkAllocator;
 #[global_allocator]
 static GLOBAL_ALLOCATOR: WdkAllocator = WdkAllocator;
 
-// ── compiler_builtins float stubs ─────────────────────────────────────────────
+// ── compiler_builtins float stubs
+// ─────────────────────────────────────────────
 //
 // `compiler_builtins 0.1.160+` references `fma` / `fmaf` (C runtime symbols)
 // on x86-64 MSVC. These symbols do not exist in kernel-mode import libraries
@@ -87,20 +89,14 @@ pub unsafe extern "C" fn __wdk_fmaf_stub(x: f32, y: f32, z: f32) -> f32 {
 use wdk_safe::{Device, IoRequest, NtStatus, WdmDriver};
 use wdk_sys::{
     ntddk::{
-        DbgPrint,
-        IoAttachDeviceToDeviceStack,
-        IoCreateDevice,
-        IoDeleteDevice,
-        IoDetachDevice,
-        IofCallDriver,
-        IofCompleteRequest,
-        PoCallDriver,
-        PoStartNextPowerIrp,
+        DbgPrint, IoAttachDeviceToDeviceStack, IoCreateDevice, IoDeleteDevice, IoDetachDevice,
+        IofCallDriver, IofCompleteRequest, PoCallDriver, PoStartNextPowerIrp,
     },
     DRIVER_OBJECT, FILE_DEVICE_KEYBOARD, NTSTATUS, PCUNICODE_STRING, PDEVICE_OBJECT, PIRP,
 };
 
-// ── FORCEINLINE macro reimplementations ───────────────────────────────────────
+// ── FORCEINLINE macro reimplementations
+// ───────────────────────────────────────
 //
 // `IoGetCurrentIrpStackLocation` and `IoSkipCurrentIrpStackLocation` are
 // FORCEINLINE macros in WDK C headers. bindgen cannot emit inline functions,
@@ -145,8 +141,8 @@ unsafe fn irp_current_stack(irp: *mut wdk_sys::IRP) -> *mut wdk_sys::IO_STACK_LO
 /// # Safety
 ///
 /// - `irp` must be non-null and valid.
-/// - The IRP must have at least one remaining stack slot
-///   (`CurrentLocation < StackCount`).
+/// - The IRP must have at least one remaining stack slot (`CurrentLocation <
+///   StackCount`).
 ///
 /// # IRQL
 ///
@@ -171,7 +167,8 @@ unsafe fn irp_skip_current_stack(irp: *mut wdk_sys::IRP) {
     }
 }
 
-// ── KernelCompleter ───────────────────────────────────────────────────────────
+// ── KernelCompleter
+// ───────────────────────────────────────────────────────────
 
 /// Concrete [`IrpCompleter`](wdk_safe::IrpCompleter) that calls
 /// `IofCompleteRequest` via `wdk-sys`.
@@ -196,7 +193,8 @@ impl wdk_safe::IrpCompleter for KernelCompleter {
     }
 }
 
-// ── Device extension ──────────────────────────────────────────────────────────
+// ── Device extension
+// ──────────────────────────────────────────────────────────
 
 /// Per-device state stored in `DeviceObject->DeviceExtension`.
 ///
@@ -211,7 +209,8 @@ struct FilterDeviceExtension {
     lower_device: PDEVICE_OBJECT,
 }
 
-// ── WdmDriver implementation ──────────────────────────────────────────────────
+// ── WdmDriver implementation
+// ──────────────────────────────────────────────────
 
 /// The HID keyboard upper-filter driver.
 struct HidFilterDriver;
@@ -239,7 +238,10 @@ impl WdmDriver<KernelCompleter> for HidFilterDriver {
         unsafe { forward_irp(request, lower) }
     }
 
-    fn on_internal_device_control(device: &Device<'_>, request: IoRequest<'_, KernelCompleter>) -> NtStatus {
+    fn on_internal_device_control(
+        device: &Device<'_>,
+        request: IoRequest<'_, KernelCompleter>,
+    ) -> NtStatus {
         let lower = get_lower_device(device);
         unsafe { forward_irp(request, lower) }
     }
@@ -307,7 +309,8 @@ impl WdmDriver<KernelCompleter> for HidFilterDriver {
     }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Helpers
+// ───────────────────────────────────────────────────────────────────
 
 /// Reads `lower_device` from `device`'s extension.
 ///
@@ -347,39 +350,54 @@ unsafe fn forward_irp(request: IoRequest<'_, KernelCompleter>, lower: PDEVICE_OB
     NtStatus::from_raw(status)
 }
 
-// ── Dispatch thunks ───────────────────────────────────────────────────────────
+// ── Dispatch thunks
+// ───────────────────────────────────────────────────────────
 //
-// `dispatch_fn!` generates `unsafe extern "C" fn(PDEVICE_OBJECT, PIRP) -> NTSTATUS`.
-// The `extern "C"` ABI is required because DRIVER_OBJECT.MajorFunction entries
-// are typed `unsafe extern "C"` on MSVC kernel targets.
+// `dispatch_fn!` generates `unsafe extern "C" fn(PDEVICE_OBJECT, PIRP) ->
+// NTSTATUS`. The `extern "C"` ABI is required because
+// DRIVER_OBJECT.MajorFunction entries are typed `unsafe extern "C"` on MSVC
+// kernel targets.
 
 wdk_safe::dispatch_fn!(
-    dispatch_create = HidFilterDriver, on_create, KernelCompleter,
+    dispatch_create = HidFilterDriver,
+    on_create,
+    KernelCompleter,
     irp_stack = irp_current_stack
 );
 wdk_safe::dispatch_fn!(
-    dispatch_close = HidFilterDriver, on_close, KernelCompleter,
+    dispatch_close = HidFilterDriver,
+    on_close,
+    KernelCompleter,
     irp_stack = irp_current_stack
 );
 wdk_safe::dispatch_fn!(
-    dispatch_read = HidFilterDriver, on_read, KernelCompleter,
+    dispatch_read = HidFilterDriver,
+    on_read,
+    KernelCompleter,
     irp_stack = irp_current_stack
 );
 wdk_safe::dispatch_fn!(
-    dispatch_power = HidFilterDriver, on_power, KernelCompleter,
+    dispatch_power = HidFilterDriver,
+    on_power,
+    KernelCompleter,
     irp_stack = irp_current_stack
 );
 wdk_safe::dispatch_fn!(
-    dispatch_pnp = HidFilterDriver, on_pnp, KernelCompleter,
+    dispatch_pnp = HidFilterDriver,
+    on_pnp,
+    KernelCompleter,
     irp_stack = irp_current_stack
 );
 
 wdk_safe::dispatch_fn!(
-    dispatch_passthrough = HidFilterDriver, on_pnp, KernelCompleter,
+    dispatch_passthrough = HidFilterDriver,
+    on_pnp,
+    KernelCompleter,
     irp_stack = irp_current_stack
 );
 
-// ── AddDevice ─────────────────────────────────────────────────────────────────
+// ── AddDevice
+// ─────────────────────────────────────────────────────────────────
 
 /// Called by the PnP manager when a new keyboard device is enumerated.
 ///
@@ -457,13 +475,18 @@ unsafe fn add_device_inner(driver: *mut DRIVER_OBJECT, pdo: PDEVICE_OBJECT) -> N
 
     // SAFETY: PASSIVE_LEVEL.
     unsafe {
-        DbgPrint(b"[hid-filter] AddDevice -- filter attached\n\0".as_ptr().cast());
+        DbgPrint(
+            b"[hid-filter] AddDevice -- filter attached\n\0"
+                .as_ptr()
+                .cast(),
+        );
     }
 
     NtStatus::SUCCESS
 }
 
-// ── DriverUnload ──────────────────────────────────────────────────────────────
+// ── DriverUnload
+// ──────────────────────────────────────────────────────────────
 
 /// Called when the driver is unloaded.
 ///
@@ -476,7 +499,11 @@ unsafe fn add_device_inner(driver: *mut DRIVER_OBJECT, pdo: PDEVICE_OBJECT) -> N
 unsafe extern "C" fn driver_unload(driver: *mut DRIVER_OBJECT) {
     // SAFETY: PASSIVE_LEVEL.
     unsafe {
-        DbgPrint(b"[hid-filter] DriverUnload -- detaching\n\0".as_ptr().cast());
+        DbgPrint(
+            b"[hid-filter] DriverUnload -- detaching\n\0"
+                .as_ptr()
+                .cast(),
+        );
     }
 
     // Walk the device object list and detach/delete each filter device we own.
@@ -496,7 +523,8 @@ unsafe extern "C" fn driver_unload(driver: *mut DRIVER_OBJECT) {
     }
 }
 
-// ── DriverEntry ───────────────────────────────────────────────────────────────
+// ── DriverEntry
+// ───────────────────────────────────────────────────────────────
 
 /// Entry point called by the I/O manager when the driver is loaded.
 ///
@@ -558,11 +586,12 @@ unsafe fn driver_entry_inner(
             }
         }
         obj.MajorFunction[wdk_sys::IRP_MJ_CREATE as usize] = Some(dispatch_create);
-        obj.MajorFunction[wdk_sys::IRP_MJ_CLOSE  as usize] = Some(dispatch_close);
-        obj.MajorFunction[wdk_sys::IRP_MJ_READ   as usize] = Some(dispatch_read);
-        obj.MajorFunction[wdk_sys::IRP_MJ_INTERNAL_DEVICE_CONTROL as usize] = Some(dispatch_passthrough);
-        obj.MajorFunction[wdk_sys::IRP_MJ_POWER  as usize] = Some(dispatch_power);
-        obj.MajorFunction[wdk_sys::IRP_MJ_PNP    as usize] = Some(dispatch_pnp);
+        obj.MajorFunction[wdk_sys::IRP_MJ_CLOSE as usize] = Some(dispatch_close);
+        obj.MajorFunction[wdk_sys::IRP_MJ_READ as usize] = Some(dispatch_read);
+        obj.MajorFunction[wdk_sys::IRP_MJ_INTERNAL_DEVICE_CONTROL as usize] =
+            Some(dispatch_passthrough);
+        obj.MajorFunction[wdk_sys::IRP_MJ_POWER as usize] = Some(dispatch_power);
+        obj.MajorFunction[wdk_sys::IRP_MJ_PNP as usize] = Some(dispatch_pnp);
         obj.DriverUnload = Some(driver_unload);
     }
     // SAFETY: PASSIVE_LEVEL.

@@ -2,17 +2,17 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 
 [package]
-name        = "wdk-safe-macros"
-version     = "0.2.0"
 description = "Procedural macros for wdk-safe: type-safe IOCTL code generation"
-edition     = "2021"
-license     = "MIT OR Apache-2.0"
-repository  = "https://github.com/arelove/wdk-safe"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+name = "wdk-safe-macros"
+repository = "https://github.com/arelove/wdk-safe"
+version = "0.2.0"
 
 [lib]
 proc-macro = true
 
 [dependencies]
 proc-macro2 = "1.0"
-quote       = "1.0"
-syn         = { version = "2.0", features = ["full"] }
+quote = "1.0"
+syn = { version = "2.0", features = ["full"] }

@@ -2,52 +2,49 @@
 
 # SPDX-License-Identifier: MIT OR Apache-2.0
 [workspace]
+members = ["crates/wdk-safe", "crates/wdk-safe-macros"]
 resolver = "2"
-members  = [
-    "crates/wdk-safe",
-    "crates/wdk-safe-macros",
-]
 
 # NOTE: examples/ and tests/ are intentionally excluded from this workspace
 # because they require a separate WDK configuration per workspace.
 # See: https://github.com/microsoft/windows-drivers-rs#repo-layout
 
 [workspace.package]
-authors      = ["arelove"]
-edition      = "2021"
-license      = "MIT OR Apache-2.0"
-repository   = "https://github.com/arelove/wdk-safe"
+authors = ["arelove"]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/arelove/wdk-safe"
 rust-version = "1.78.0"
 
 [workspace.dependencies]
 # WDK stack — pinned to versions tested with NI eWDK + KMDF 1.33
-wdk       = "0.4.1"
+wdk = "0.4.1"
 wdk-alloc = "0.4.1"
 wdk-build = "0.5.1"
 wdk-panic = "0.4.1"
-wdk-sys   = "0.5.1"
+wdk-sys = "0.5.1"
 
 # Proc-macro support
 proc-macro2 = "1.0"
-quote       = "1.0"
-syn         = { version = "2.0", features = ["full"] }
+quote = "1.0"
+syn = { version = "2.0", features = ["full"] }
 
 # Internal crates
 wdk-safe-macros = { path = "crates/wdk-safe-macros" }
 
 [workspace.lints.rust]
-missing_docs           = "warn"
+missing_docs = "warn"
 unsafe_op_in_unsafe_fn = "warn"
-unused_import_braces   = "warn"
-unused_lifetimes       = "warn"
-unused_qualifications  = "warn"
+unused_import_braces = "warn"
+unused_lifetimes = "warn"
+unused_qualifications = "warn"
 
 [workspace.lints.clippy]
-all      = { level = "warn", priority = -1 }
-nursery  = { level = "warn", priority = -1 }
+all = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 
 # Kernel-mode safety rules
-float_arithmetic     = "deny"
+float_arithmetic = "deny"
 std_instead_of_alloc = "warn"
-std_instead_of_core  = "warn"
+std_instead_of_core = "warn"

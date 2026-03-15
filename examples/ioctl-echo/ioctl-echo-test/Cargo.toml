@@ -1,9 +1,9 @@
 [workspace]
 
 [package]
+edition = "2021"
 name = "ioctl-echo-test"
 version = "0.1.0"
-edition = "2021"
 
 [[bin]]
 name = "ioctl_echo_test"

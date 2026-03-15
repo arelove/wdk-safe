@@ -52,7 +52,8 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 #![warn(missing_docs)]
 
-// ── Kernel-mode boilerplate ───────────────────────────────────────────────────
+// ── Kernel-mode boilerplate
+// ───────────────────────────────────────────────────
 
 /// Bug-check on panic — the only safe behaviour in kernel mode (no unwinding).
 #[cfg(not(test))]
@@ -66,8 +67,9 @@ use wdk_alloc::WdkAllocator;
 #[global_allocator]
 static GLOBAL_ALLOCATOR: WdkAllocator = WdkAllocator;
 
-// ── compiler_builtins float stubs ─────────────────────────────────────────────
-// See hid-filter for full explanation.
+// ── compiler_builtins float stubs
+// ───────────────────────────────────────────── See hid-filter for full
+// explanation.
 #[no_mangle]
 #[doc(hidden)]
 pub unsafe extern "C" fn __wdk_fma_stub(x: f64, y: f64, z: f64) -> f64 {
@@ -85,11 +87,11 @@ use wdk_sys::{
         DbgPrint, IoCreateDevice, IoCreateSymbolicLink, IoDeleteDevice, IoDeleteSymbolicLink,
         IofCompleteRequest, RtlInitUnicodeString,
     },
-    DRIVER_OBJECT, FILE_DEVICE_NULL, NTSTATUS, PCUNICODE_STRING, PDEVICE_OBJECT,
-    UNICODE_STRING,
+    DRIVER_OBJECT, FILE_DEVICE_NULL, NTSTATUS, PCUNICODE_STRING, PDEVICE_OBJECT, UNICODE_STRING,
 };
 
-// ── FORCEINLINE reimplementations ─────────────────────────────────────────────
+// ── FORCEINLINE reimplementations
+// ─────────────────────────────────────────────
 
 /// Returns the current `IO_STACK_LOCATION` for `irp`.
 ///
@@ -111,7 +113,8 @@ unsafe fn irp_current_stack(irp: *mut wdk_sys::IRP) -> *mut wdk_sys::IO_STACK_LO
     }
 }
 
-// ── KernelCompleter ───────────────────────────────────────────────────────────
+// ── KernelCompleter
+// ───────────────────────────────────────────────────────────
 
 /// Zero-sized [`IrpCompleter`](wdk_safe::IrpCompleter) that calls
 /// `IofCompleteRequest`.
@@ -132,7 +135,8 @@ impl wdk_safe::IrpCompleter for KernelCompleter {
     }
 }
 
-// ── WdmDriver implementation ──────────────────────────────────────────────────
+// ── WdmDriver implementation
+// ──────────────────────────────────────────────────
 
 /// The null device driver — discards writes, returns EOF on reads.
 struct NullDeviceDriver;
@@ -155,7 +159,13 @@ impl WdmDriver<KernelCompleter> for NullDeviceDriver {
     /// Discard all written data — classic /dev/null behaviour.
     fn on_write(_device: &Device<'_>, request: IoRequest<'_, KernelCompleter>) -> NtStatus {
         // SAFETY: PASSIVE_LEVEL / APC_LEVEL for typical synchronous writes.
-        unsafe { DbgPrint(b"[null-device] IRP_MJ_WRITE -- discarding\n\0".as_ptr().cast()) };
+        unsafe {
+            DbgPrint(
+                b"[null-device] IRP_MJ_WRITE -- discarding\n\0"
+                    .as_ptr()
+                    .cast(),
+            )
+        };
         // Complete with SUCCESS and 0 bytes information — data is discarded.
         request.complete(NtStatus::SUCCESS)
     }
@@ -163,37 +173,54 @@ impl WdmDriver<KernelCompleter> for NullDeviceDriver {
     /// Return EOF — zero bytes available.
     fn on_read(_device: &Device<'_>, request: IoRequest<'_, KernelCompleter>) -> NtStatus {
         // SAFETY: PASSIVE_LEVEL / APC_LEVEL.
-        unsafe { DbgPrint(b"[null-device] IRP_MJ_READ -- returning EOF\n\0".as_ptr().cast()) };
+        unsafe {
+            DbgPrint(
+                b"[null-device] IRP_MJ_READ -- returning EOF\n\0"
+                    .as_ptr()
+                    .cast(),
+            )
+        };
         // Complete with SUCCESS and Information=0 signals EOF to the caller.
         request.complete(NtStatus::SUCCESS)
     }
 }
 
-// ── Dispatch thunks ───────────────────────────────────────────────────────────
+// ── Dispatch thunks
+// ───────────────────────────────────────────────────────────
 
 wdk_safe::dispatch_fn!(
-    dispatch_create = NullDeviceDriver, on_create, KernelCompleter,
+    dispatch_create = NullDeviceDriver,
+    on_create,
+    KernelCompleter,
     irp_stack = irp_current_stack
 );
 wdk_safe::dispatch_fn!(
-    dispatch_close = NullDeviceDriver, on_close, KernelCompleter,
+    dispatch_close = NullDeviceDriver,
+    on_close,
+    KernelCompleter,
     irp_stack = irp_current_stack
 );
 wdk_safe::dispatch_fn!(
-    dispatch_write = NullDeviceDriver, on_write, KernelCompleter,
+    dispatch_write = NullDeviceDriver,
+    on_write,
+    KernelCompleter,
     irp_stack = irp_current_stack
 );
 wdk_safe::dispatch_fn!(
-    dispatch_read = NullDeviceDriver, on_read, KernelCompleter,
+    dispatch_read = NullDeviceDriver,
+    on_read,
+    KernelCompleter,
     irp_stack = irp_current_stack
 );
 
-// ── Device names ──────────────────────────────────────────────────────────────
+// ── Device names
+// ──────────────────────────────────────────────────────────────
 
 /// NT device name — used by the kernel to route I/O.
 const DEVICE_NAME: &[u8] = b"\\\x00000\\\x00000D\x00e\x00v\x00i\x00c\x00e\x00\\\x00W\x00d\x00k\x00S\x00a\x00f\x00e\x00N\x00u\x00l\x00l\x00\0\0";
 
-// We use raw UTF-16 literals via a helper below instead of the byte string above.
+// We use raw UTF-16 literals via a helper below instead of the byte string
+// above.
 
 /// Initialises a `UNICODE_STRING` from a UTF-16 string literal slice.
 ///
@@ -212,7 +239,8 @@ unsafe fn unicode_string_from_slice(buf: &[u16]) -> UNICODE_STRING {
     }
 }
 
-// ── DriverUnload ──────────────────────────────────────────────────────────────
+// ── DriverUnload
+// ──────────────────────────────────────────────────────────────
 
 /// Called when the driver is unloaded. Removes symbolic link and device.
 ///
@@ -222,17 +250,43 @@ unsafe fn unicode_string_from_slice(buf: &[u16]) -> UNICODE_STRING {
 unsafe extern "C" fn driver_unload(driver: *mut DRIVER_OBJECT) {
     // SAFETY: PASSIVE_LEVEL.
     unsafe {
-        DbgPrint(b"[null-device] DriverUnload -- cleaning up\n\0".as_ptr().cast());
+        DbgPrint(
+            b"[null-device] DriverUnload -- cleaning up\n\0"
+                .as_ptr()
+                .cast(),
+        );
     }
 
     // Delete the DOS symbolic link.
     #[allow(clippy::unicode_not_nfc)]
     let dos_name_buf: &[u16] = &[
-        b'\\' as u16, b'\\'  as u16, // "\\"  — wrong, use proper UTF-16
+        b'\\' as u16,
+        b'\\' as u16, // "\\"  — wrong, use proper UTF-16
         // Build \DosDevices\WdkSafeNull as UTF-16
-        0x005C, 0x0044, 0x006F, 0x0073, 0x0044, 0x0065, 0x0076, 0x0069,
-        0x0063, 0x0065, 0x0073, 0x005C, 0x0057, 0x0064, 0x006B, 0x0053,
-        0x0061, 0x0066, 0x0065, 0x004E, 0x0075, 0x006C, 0x006C, 0x0000,
+        0x005C,
+        0x0044,
+        0x006F,
+        0x0073,
+        0x0044,
+        0x0065,
+        0x0076,
+        0x0069,
+        0x0063,
+        0x0065,
+        0x0073,
+        0x005C,
+        0x0057,
+        0x0064,
+        0x006B,
+        0x0053,
+        0x0061,
+        0x0066,
+        0x0065,
+        0x004E,
+        0x0075,
+        0x006C,
+        0x006C,
+        0x0000,
     ];
     // SAFETY: slice is static.
     let mut dos_name = unsafe { unicode_string_from_slice(dos_name_buf) };
@@ -249,7 +303,8 @@ unsafe extern "C" fn driver_unload(driver: *mut DRIVER_OBJECT) {
     }
 }
 
-// ── DriverEntry ───────────────────────────────────────────────────────────────
+// ── DriverEntry
+// ───────────────────────────────────────────────────────────────
 
 /// Entry point. Creates device + symbolic link, registers dispatch routines.
 ///
@@ -278,31 +333,30 @@ unsafe fn driver_entry_inner(
 
     // NT device name: \Device\WdkSafeNull (UTF-16)
     let device_name_buf: &[u16] = &[
-        0x005C, 0x0044, 0x0065, 0x0076, 0x0069, 0x0063, 0x0065, 0x005C,
-        0x0057, 0x0064, 0x006B, 0x0053, 0x0061, 0x0066, 0x0065, 0x004E,
-        0x0075, 0x006C, 0x006C, 0x0000,
+        0x005C, 0x0044, 0x0065, 0x0076, 0x0069, 0x0063, 0x0065, 0x005C, 0x0057, 0x0064, 0x006B,
+        0x0053, 0x0061, 0x0066, 0x0065, 0x004E, 0x0075, 0x006C, 0x006C, 0x0000,
     ];
     // DOS symbolic link: \DosDevices\WdkSafeNull (UTF-16)
     let dos_name_buf: &[u16] = &[
-        0x005C, 0x0044, 0x006F, 0x0073, 0x0044, 0x0065, 0x0076, 0x0069,
-        0x0063, 0x0065, 0x0073, 0x005C, 0x0057, 0x0064, 0x006B, 0x0053,
-        0x0061, 0x0066, 0x0065, 0x004E, 0x0075, 0x006C, 0x006C, 0x0000,
+        0x005C, 0x0044, 0x006F, 0x0073, 0x0044, 0x0065, 0x0076, 0x0069, 0x0063, 0x0065, 0x0073,
+        0x005C, 0x0057, 0x0064, 0x006B, 0x0053, 0x0061, 0x0066, 0x0065, 0x004E, 0x0075, 0x006C,
+        0x006C, 0x0000,
     ];
 
     // SAFETY: static slices remain valid for the driver lifetime.
     let mut device_name = unsafe { unicode_string_from_slice(device_name_buf) };
-    let mut dos_name    = unsafe { unicode_string_from_slice(dos_name_buf) };
+    let mut dos_name = unsafe { unicode_string_from_slice(dos_name_buf) };
 
     // Create the device object.
     let mut device_obj: PDEVICE_OBJECT = core::ptr::null_mut();
     let status = unsafe {
         IoCreateDevice(
             driver,
-            0,                      // no device extension
+            0, // no device extension
             &mut device_name,
             FILE_DEVICE_NULL,
             0,
-            false as u8,            // non-exclusive
+            false as u8, // non-exclusive
             &mut device_obj,
         )
     };
@@ -333,9 +387,9 @@ unsafe fn driver_entry_inner(
     unsafe {
         let obj = &mut *driver;
         obj.MajorFunction[wdk_sys::IRP_MJ_CREATE as usize] = Some(dispatch_create);
-        obj.MajorFunction[wdk_sys::IRP_MJ_CLOSE  as usize] = Some(dispatch_close);
-        obj.MajorFunction[wdk_sys::IRP_MJ_READ   as usize] = Some(dispatch_read);
-        obj.MajorFunction[wdk_sys::IRP_MJ_WRITE  as usize] = Some(dispatch_write);
+        obj.MajorFunction[wdk_sys::IRP_MJ_CLOSE as usize] = Some(dispatch_close);
+        obj.MajorFunction[wdk_sys::IRP_MJ_READ as usize] = Some(dispatch_read);
+        obj.MajorFunction[wdk_sys::IRP_MJ_WRITE as usize] = Some(dispatch_write);
         obj.DriverUnload = Some(driver_unload);
     }
 

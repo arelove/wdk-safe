@@ -17,7 +17,14 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: crate-ci/typos@v1
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "tools"
+          cache-targets: false
+      - name: Install typos-cli
+        run: cargo install typos-cli --locked
+      - name: Run typos
+        run: typos 
 
   # ── 2. TOML formatting ─────────────────────────────────────────────────────
   taplo:

@@ -9,10 +9,7 @@
 # -Cpanic=abort : force abort strategy for every crate in the build graph,
 #   overriding the pre-compiled core's unwind default.
 # +crt-static   : statically link the MSVC CRT (required for kernel drivers).
-rustflags = [
-    "-C", "panic=abort",
-    "-C", "target-feature=+crt-static",
-]
+rustflags = ["-C", "-C", "panic=abort", "target-feature=+crt-static"]
 
 # -Zbuild-std: rebuild core from source.
 # - List only "core" — cargo will pull compiler_builtins implicitly with the

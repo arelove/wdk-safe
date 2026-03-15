@@ -2,5 +2,5 @@
 # panic=abort — mandatory for kernel-mode drivers (no stack unwinding in ring 0).
 [toolchain]
 channel = "nightly"
-components = ["rust-src", "rustfmt", "clippy"]
+components = ["clippy", "rust-src", "rustfmt"]
 targets = ["x86_64-pc-windows-msvc"]

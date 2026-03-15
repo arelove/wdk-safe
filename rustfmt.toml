@@ -1,7 +1,7 @@
 # Идентично microsoft/windows-drivers-rs
-edition                  = "2021"
-group_imports            = "StdExternalCrate"
-imports_granularity      = "Crate"
-newline_style            = "Windows"
-wrap_comments            = true
+edition = "2021"
 format_code_in_doc_comments = true
+group_imports = "StdExternalCrate"
+imports_granularity = "Crate"
+newline_style = "Windows"
+wrap_comments = true

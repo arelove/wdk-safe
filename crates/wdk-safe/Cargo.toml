@@ -2,15 +2,15 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 
 [package]
-name         = "wdk-safe"
-version      = "0.2.0"
-description  = "Safe, idiomatic Rust abstractions for Windows kernel-mode driver development"
-categories   = ["no-std", "os::windows-apis"]
-edition.workspace      = true
-keywords     = ["driver", "kernel", "wdm", "wdk", "windows"]
-license.workspace      = true
-repository.workspace   = true
+categories = ["no-std", "os::windows-apis"]
+description = "Safe, idiomatic Rust abstractions for Windows kernel-mode driver development"
+edition.workspace = true
+keywords = ["driver", "kernel", "wdk", "wdm", "windows"]
+license.workspace = true
+name = "wdk-safe"
+repository.workspace = true
 rust-version.workspace = true
+version = "0.2.0"
 
 [lib]
 crate-type = ["rlib"]
