@@ -1,0 +1,10 @@
+{
+  "MD041": {
+    "front_matter_title": ""
+  },
+  "globs": {
+    "LICENSE*": {
+      "MD041": false
+    }
+  }
+}

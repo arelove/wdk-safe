@@ -17,14 +17,21 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install typos-cli
-        run: cargo install typos-cli --locked
-      - name: Run typos
-        run: typos
+      - uses: crate-ci/typos@v1
 
-  # ── 2. Formatting ──────────────────────────────────────────────────────────
+  # ── 2. TOML formatting ─────────────────────────────────────────────────────
+  taplo:
+    name: TOML Formatting
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: uncenter/setup-taplo@v1
+      - name: taplo fmt --check
+        run: taplo fmt --check
+
+  # ── 3. Rust formatting ─────────────────────────────────────────────────────
   fmt:
-    name: Formatting
+    name: Rust Formatting
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,11 +40,17 @@ jobs:
           components: rustfmt
       - name: cargo fmt — workspace
         run: cargo fmt --all -- --check
-      - name: cargo fmt — examples workspace
+      - name: cargo fmt — null-device
         run: cargo fmt --all -- --check
-        working-directory: examples
+        working-directory: examples/null-device
+      - name: cargo fmt — ioctl-echo
+        run: cargo fmt --all -- --check
+        working-directory: examples/ioctl-echo
+      - name: cargo fmt — hid-filter
+        run: cargo fmt --all -- --check
+        working-directory: examples/hid-filter
 
-  # ── 3. Clippy ──────────────────────────────────────────────────────────────
+  # ── 4. Clippy ──────────────────────────────────────────────────────────────
   clippy:
     name: Clippy
     runs-on: windows-latest
@@ -53,9 +66,9 @@ jobs:
       - name: cargo clippy — workspace
         run: cargo clippy --all-targets --all-features -- -D warnings
 
-  # ── 4. Unit tests (host, no WDK required) ─────────────────────────────────
+  # ── 5. Tests ───────────────────────────────────────────────────────────────
   test:
-    name: Unit Tests
+    name: Tests
     runs-on: windows-latest
     needs: clippy
     steps:
@@ -64,12 +77,12 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: "wdk-safe-test"
-      - name: cargo test (unit + doc tests)
-        run: cargo test -p wdk-safe -p wdk-safe-macros
+      - name: cargo test — unit + doc + integration
+        run: cargo test -p wdk-safe -p wdk-safe-macros -p integration
 
-  # ── 5. Doc tests ───────────────────────────────────────────────────────────
-  doctest:
-    name: Doc Tests
+  # ── 6. Docs ────────────────────────────────────────────────────────────────
+  doc:
+    name: Docs
     runs-on: windows-latest
     needs: clippy
     steps:
@@ -77,6 +90,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
-          shared-key: "wdk-safe-doctest"
-      - name: cargo test --doc
-        run: cargo test --doc -p wdk-safe
+          shared-key: "wdk-safe-doc"
+      - name: cargo doc
+        run: cargo doc --no-deps -p wdk-safe
+        env:
+          RUSTDOCFLAGS: "-D warnings"
