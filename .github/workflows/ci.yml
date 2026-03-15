@@ -17,14 +17,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: "tools"
-          cache-targets: false
-      - name: Install typos-cli
-        run: cargo install typos-cli --locked
-      - name: Run typos
-        run: typos 
+      - uses: crate-ci/typos@v1
 
   # ── 2. TOML formatting ─────────────────────────────────────────────────────
   taplo:
@@ -33,6 +26,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: uncenter/setup-taplo@v1
+        with:
+          version: "0.10.0"
       - name: taplo fmt --check
         run: taplo fmt --check
 
@@ -84,8 +79,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: "wdk-safe-test"
-      - name: cargo test — unit + doc + integration
-        run: cargo test -p wdk-safe -p wdk-safe-macros -p integration
+      - name: cargo test — unit + macros
+        run: cargo test -p wdk-safe -p wdk-safe-macros
+      - name: cargo test — integration
+        run: cargo test
+        working-directory: tests/integration
 
   # ── 6. Docs ────────────────────────────────────────────────────────────────
   doc:
